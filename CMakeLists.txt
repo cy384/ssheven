@@ -7,10 +7,10 @@ set_target_properties(ssheven PROPERTIES COMPILE_OPTIONS -ffunction-sections)
 IF(CMAKE_SYSTEM_NAME MATCHES Retro68)
 # for 68k
 set_target_properties(ssheven PROPERTIES LINK_FLAGS "-Wl,-gc-sections -Wl,--mac-strip-macsbug -Wl,--mac-segments -Wl,${CMAKE_CURRENT_SOURCE_DIR}/ssheven.segmap")
-target_link_libraries(ssheven -lRetroConsole -lOpenTransport -lOpenTransportApp -lOpenTptInet -lmbedtls -lmbedx509 -lmbedcrypto)
+target_link_libraries(ssheven -lRetroConsole -lOpenTransport -lOpenTransportApp -lOpenTptInet -lmbedtls -lmbedx509 -lmbedcrypto -lssh2)
 ELSE()
 # for PPC
 set_target_properties(ssheven PROPERTIES LINK_FLAGS "-Wl,-gc-sections")
-target_link_libraries(ssheven -lRetroConsole -lOpenTransportAppPPC -lOpenTransportLib -lOpenTptInternetLib -lThreadsLib -lmbedtls -lmbedx509 -lmbedcrypto)
+target_link_libraries(ssheven -lRetroConsole -lOpenTransportAppPPC -lOpenTransportLib -lOpenTptInternetLib -lThreadsLib -lmbedtls -lmbedx509 -lmbedcrypto -lssh2)
 ENDIF()
 
