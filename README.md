@@ -2,7 +2,7 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9 on m68k and PPC machines.
 
-Project status:
+Project status: getting the SSH connection stuff working
 
 * encryption libraries: ham-handedly ported and built, not yet tested at all
 * console emulation: nonexistent, planning the use of libvterm for escape codes etc., going to need to make a custom window type
