@@ -130,8 +130,7 @@ enum { buffer_size = 4096 };
 
 void assertp(char* message, int b)
 {
-	if (!b) { printf("assert fail: %s (%d)\n", message, b); fflush(stdout); }
-	getchar();
+	if (!b) printf("assert fail: %s (%d)\n", message, b);
 }
 
 // event handler to yield whenever we're blocked
@@ -150,7 +149,7 @@ static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult r
 
 void do_ssh_connection(void)
 {
-	char* hostname = "cy384.com:22";
+	char* hostname = "10.0.2.2:22";
 	char* command = "uname";
 	char* username = "ssheven";
 	char* password = "password";
@@ -171,20 +170,18 @@ void do_ssh_connection(void)
 	buffer = OTAllocMem(buffer_size);
 	if (buffer == nil)
 	{
-		printf("could not get memory!!!\n");fflush(stdout);
+		printf("could not get memory!!!\n");
 		return;
 	}
 	else
 	{
-		printf("got mem\n");fflush(stdout);
+		printf("got mem\n");
 	}
 
 	// open TCP endpoint
 	endpoint = OTOpenEndpoint(OTCreateConfiguration(kTCPName), 0, nil, &err);
 	assertp("endpoint opened", err == noErr);
 	if (err != noErr) return;
-
-	printf("0\n");fflush(stdout);
 
 	// configure the endpoint
 	// synchronous and blocking, and we yield until we get a result
@@ -203,14 +200,10 @@ void do_ssh_connection(void)
 	result = OTUseSyncIdleEvents(endpoint, true);
 	assertp("OTUseSyncIdleEvents failed", result == noErr);
 
-	printf("0.5\n");fflush(stdout);
-
 	err = OTBind(endpoint, nil, nil);
 	assertp("OTBind failed", err == noErr);
 
 	if (err != noErr) return;
-
-	printf("1\n");fflush(stdout);
 
 	// set up address struct and connect
 
@@ -221,8 +214,6 @@ void do_ssh_connection(void)
 
 	err = OTConnect(endpoint, &sndCall, nil);
 	assertp("OTConnect failed", err == noErr);
-
-	printf("2\n");fflush(stdout);
 
 	if (err != noErr) return;
 
@@ -243,8 +234,6 @@ void do_ssh_connection(void)
 		return;
 	}
 
-	printf("3\n");fflush(stdout);
-
 	// I think we stubbed this function out, lol
 	//libssh2_session_set_blocking(session, endpoint);
 
@@ -254,9 +243,7 @@ void do_ssh_connection(void)
 	if (rc != LIBSSH2_ERROR_NONE) return;
 	//while((rc = libssh2_session_handshake(session, endpoint)) == LIBSSH2_ERROR_EAGAIN);
 
-	printf("3.5\n");fflush(stdout);
-
-	//rc = libssh2_userauth_password(session, username, password);
+	rc = libssh2_userauth_password(session, username, password);
 	printf("authenticate rc %s\n", libssh2_error_string(rc));
 	if (rc != LIBSSH2_ERROR_NONE) return;
 
@@ -286,23 +273,15 @@ void do_ssh_connection(void)
 */
 	//libssh2_channel_free(channel);
 
-	printf("4\n");fflush(stdout);
-
 	libssh2_session_disconnect(session, "Normal Shutdown, Thank you for playing");
-
-	printf("5\n");fflush(stdout);
 
 	libssh2_session_free(session);
 
-	printf("6\n");fflush(stdout);
-
-	libssh2_exit();fflush(stdout);
+	libssh2_exit();
 
 	// OT cleanup
 	result = OTUnbind(endpoint);
 	assertp("OTUnbind failed", result == noErr);
-
-	printf("7\n");
 
 	// if we set up an endpoint, close it
 	if (endpoint != kOTInvalidEndpointRef)
@@ -314,15 +293,12 @@ void do_ssh_connection(void)
 	// if we got a buffer, release it
 	if (buffer != nil) OTFreeMem(buffer);
 
-	printf("8\n");
-
 	return;
 }
 
 int main(int argc, char** argv)
 {
 	printf("hello, world\n");
-	getchar();
 
 	if (InitOpenTransport() != noErr)
 	{
@@ -334,7 +310,7 @@ int main(int argc, char** argv)
 
 	CloseOpenTransport();
 
-	printf("\n(return to exit)\n");
+	printf("\n(a to exit)\n");
 	while (getchar() != 'a');
 
 	return 0;
