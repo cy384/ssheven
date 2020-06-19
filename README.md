@@ -2,7 +2,7 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9 on m68k and PPC machines.
 
-Project status: can open the SSH connection, channel, send a command, get the response, and cleanly disconnect
+Project status: can open the SSH connection, channel, send a command, get the response, and cleanly disconnect.  See release 0.0.0 for a simple demo.
 
 * encryption libraries: ham-handedly ported and seem to work
 * console emulation: nonexistent, planning the use of libvterm for escape codes etc., going to need to make a custom window type
