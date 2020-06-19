@@ -150,9 +150,9 @@ static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult r
 void do_ssh_connection(void)
 {
 	char* hostname = "10.0.2.2:22";
-	char* command = "uname";
 	char* username = "ssheven";
 	char* password = "password";
+	char* command = "uname -a";
 
 	LIBSSH2_CHANNEL* channel;
 	LIBSSH2_SESSION* session;
@@ -175,7 +175,7 @@ void do_ssh_connection(void)
 	}
 	else
 	{
-		printf("got mem\n");
+		printf("got OT buffer\n");
 	}
 
 	// open TCP endpoint
@@ -234,44 +234,38 @@ void do_ssh_connection(void)
 		return;
 	}
 
-	// I think we stubbed this function out, lol
-	//libssh2_session_set_blocking(session, endpoint);
-
-	// replace 0 with the OT connection
 	rc = libssh2_session_handshake(session, endpoint);
 	printf("handshake rc %s\n", libssh2_error_string(rc));
 	if (rc != LIBSSH2_ERROR_NONE) return;
-	//while((rc = libssh2_session_handshake(session, endpoint)) == LIBSSH2_ERROR_EAGAIN);
 
 	rc = libssh2_userauth_password(session, username, password);
 	printf("authenticate rc %s\n", libssh2_error_string(rc));
 	if (rc != LIBSSH2_ERROR_NONE) return;
 
-/*
-	// are we required to look at the known hosts? see if we can skip for now
+	channel = libssh2_channel_open_session(session);
+	printf("channel open: %d\n", channel);
 
-	while((rc = libssh2_userauth_password(session, username, password)) == LIBSSH2_ERROR_EAGAIN);
-	assertp("pw login failed", !rc);
+	printf("sending command \"%s\"\n", command);
+	rc = libssh2_channel_exec(channel, command);
+	printf("libssh2_channel_exec rc %s\n", libssh2_error_string(rc));
 
-	while((channel = libssh2_channel_open_session(session)) == NULL && libssh2_session_last_error(session, NULL, NULL, 0) == LIBSSH2_ERROR_EAGAIN)
+	// read from the channel
+	rc = libssh2_channel_read(channel, buffer, buffer_size);
+	if (rc > 0)
 	{
-		;//waitsocket(sock, session); // need this?
+		printf("got %d bytes:\n", rc);
+		for(int i = 0; i < rc; ++i) printf("%c", buffer[i]);
+		printf("\n");
 	}
-	assertp("channel open failed", channel != 0);
+	else
+	{
+		printf("channel read error: %s\n", libssh2_error_string(rc));
+	}
 
-	while((rc = libssh2_channel_exec(channel, command)) == LIBSSH2_ERROR_EAGAIN);
-	assertp("exec channel open failed", rc == 0);
+	rc = libssh2_channel_close(channel);
+	printf("libssh2_channel_close rc %s\n", libssh2_error_string(rc));
 
-
-	// TODO: do the actual read here!
-
-
-	while((rc = libssh2_channel_close(channel)) == LIBSSH2_ERROR_EAGAIN);
-	assertp("channel close failed", rc == 0);
-
-	// skipping some other stuff here
-*/
-	//libssh2_channel_free(channel);
+	libssh2_channel_free(channel);
 
 	libssh2_session_disconnect(session, "Normal Shutdown, Thank you for playing");
 
@@ -279,16 +273,37 @@ void do_ssh_connection(void)
 
 	libssh2_exit();
 
-	// OT cleanup
+	// request to close the TCP connection
+	rc = OTSndOrderlyDisconnect(endpoint);
+	assertp("OTSndOrderlyDisconnect failed", rc == noErr);
+
+	// get any remaining data so we can finish closing the connection
+	OTFlags ot_flags;
+	rc = 1;
+	while (rc != kOTLookErr)
+	{
+		rc = OTRcv(endpoint, buffer, 1, &ot_flags);
+	}
+
+	// finish closing the TCP connection
+	OTResult look_result = OTLook(endpoint);
+	switch (look_result)
+	{
+		case T_DISCONNECT:
+			err = OTRcvDisconnect(endpoint, nil);
+			break;
+
+		default:
+			printf("other connection error: %d\n", look_result);
+			break;
+	}
+
+	// release endpoint
 	result = OTUnbind(endpoint);
 	assertp("OTUnbind failed", result == noErr);
 
-	// if we set up an endpoint, close it
-	if (endpoint != kOTInvalidEndpointRef)
-	{
-		OSStatus result = OTCloseProvider(endpoint);
-		assertp("OTCloseProvider failed", result == noErr);
-	}
+	result = OTCloseProvider(endpoint);
+	assertp("OTCloseProvider failed", result == noErr);
 
 	// if we got a buffer, release it
 	if (buffer != nil) OTFreeMem(buffer);
@@ -298,7 +313,7 @@ void do_ssh_connection(void)
 
 int main(int argc, char** argv)
 {
-	printf("hello, world\n");
+	printf("starting up\n");
 
 	if (InitOpenTransport() != noErr)
 	{
