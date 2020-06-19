@@ -18,6 +18,12 @@
 // libssh2
 #include <libssh2.h>
 
+// network buffer size
+enum { buffer_size = 4096 };
+
+// text input buffer size
+enum { input_buffer_size = 128 };
+
 const char* libssh2_error_string(int i)
 {
 	switch (i)
@@ -123,14 +129,7 @@ const char* libssh2_error_string(int i)
 			return "unknown error number";
 	}
 
-	return "what???";
-}
-
-enum { buffer_size = 4096 };
-
-void assertp(char* message, int b)
-{
-	if (!b) printf("assert fail: %s (%d)\n", message, b);
+	return "should never return from here?";
 }
 
 // event handler to yield whenever we're blocked
@@ -147,107 +146,94 @@ static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult r
 	}
 }
 
-void do_ssh_connection(void)
+void get_line(char* buffer)
 {
-	char* hostname = "10.0.2.2:22";
-	char* username = "ssheven";
-	char* password = "password";
-	char* command = "uname -a";
+	int i = 0;
+	char c;
 
+	while (i < input_buffer_size - 1)
+	{
+		c = getc(stdin);
+		if (c != '\n') buffer[i++] = c; else break;
+	}
+
+	buffer[i] = '\0';
+	return;
+}
+
+void do_ssh_connection(char* hostname, char* username, char* password, char* command)
+{
+	// libssh2 vars
 	LIBSSH2_CHANNEL* channel;
 	LIBSSH2_SESSION* session;
-
 	int rc;
 
-	// make and set up OT connection
+	// OT vars
 	OSStatus err = noErr;
-	Ptr buffer = nil;
+	char* buffer = NULL;
 	EndpointRef endpoint = kOTInvalidEndpointRef;
 	TCall sndCall;
 	DNSAddress hostDNSAddress;
+	OSStatus result;
+	OTFlags ot_flags;
 
 	// allocate buffer
 	buffer = OTAllocMem(buffer_size);
-	if (buffer == nil)
+	if (buffer == NULL)
 	{
-		printf("could not get memory!!!\n");
+		printf("failed to allocate OT buffer\n");
 		return;
-	}
-	else
-	{
-		printf("got OT buffer\n");
 	}
 
 	// open TCP endpoint
 	endpoint = OTOpenEndpoint(OTCreateConfiguration(kTCPName), 0, nil, &err);
-	assertp("endpoint opened", err == noErr);
-	if (err != noErr) return;
+	if (err != noErr)
+	{
+		printf("failed to open TCP endpoint\n");
+		if (buffer != NULL) OTFreeMem(buffer);
+		return;
+	}
 
-	// configure the endpoint
-	// synchronous and blocking, and we yield until we get a result
+	#define OT_CHECK(X) err = (X); if (err != noErr) { printf("" #X " failed: %d\n", err); goto OT_cleanup; };
 
-	OSStatus result;
+	OT_CHECK(OTSetSynchronous(endpoint));
+	OT_CHECK(OTSetBlocking(endpoint));
+	OT_CHECK(OTInstallNotifier(endpoint, yield_notifier, nil));
+	OT_CHECK(OTUseSyncIdleEvents(endpoint, true));
+	OT_CHECK(OTBind(endpoint, nil, nil));
 
-	result = OTSetSynchronous(endpoint);
-	assertp("OTSetSynchronous failed", result == noErr);
-
-	result = OTSetBlocking(endpoint);
-	assertp("OTSetBlocking failed", result == noErr);
-
-	result = OTInstallNotifier(endpoint, yield_notifier, nil);
-	assertp("OTInstallNotifier failed", result == noErr);
-
-	result = OTUseSyncIdleEvents(endpoint, true);
-	assertp("OTUseSyncIdleEvents failed", result == noErr);
-
-	err = OTBind(endpoint, nil, nil);
-	assertp("OTBind failed", err == noErr);
-
-	if (err != noErr) return;
-
-	// set up address struct and connect
-
+	// set up address struct, do the DNS lookup, and connect
 	OTMemzero(&sndCall, sizeof(TCall));
 
 	sndCall.addr.buf = (UInt8 *) &hostDNSAddress;
 	sndCall.addr.len = OTInitDNSAddress(&hostDNSAddress, (char *) hostname);
 
-	err = OTConnect(endpoint, &sndCall, nil);
-	assertp("OTConnect failed", err == noErr);
+	OT_CHECK(OTConnect(endpoint, &sndCall, nil));
 
-	if (err != noErr) return;
+	printf("OT setup done, endpoint: %d, (should not be %d for libssh2,"
+		" should not be %d for OT)\n", (int) endpoint,
+		(int) LIBSSH2_INVALID_SOCKET, (int) kOTInvalidEndpointRef);
 
-	printf("OT setup done, endpoint: %d, (should not be %d for libssh2, should not be %d for OT)\n", (int) endpoint, (int) LIBSSH2_INVALID_SOCKET, (int) kOTInvalidEndpointRef);
+	#define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf("" #X "failed: %s\n", libssh2_error_string(rc)); goto libssh2_cleanup; };
 
 	// init libssh2
-	rc = libssh2_init(0);
-	printf("init rc %s\n", libssh2_error_string(rc));
+	SSH_CHECK(libssh2_init(0));
 
 	session = libssh2_session_init();
-	if (session != 0)
+	if (session == 0)
 	{
-		printf("session ok\n");
-	}
-	else
-	{
-		printf("session fail\n");
-		return;
+		printf("failed to open SSH session\n");
+		goto libssh2_cleanup;
 	}
 
-	rc = libssh2_session_handshake(session, endpoint);
-	printf("handshake rc %s\n", libssh2_error_string(rc));
-	if (rc != LIBSSH2_ERROR_NONE) return;
+	SSH_CHECK(libssh2_session_handshake(session, endpoint));
 
-	rc = libssh2_userauth_password(session, username, password);
-	printf("authenticate rc %s\n", libssh2_error_string(rc));
-	if (rc != LIBSSH2_ERROR_NONE) return;
+	SSH_CHECK(libssh2_userauth_password(session, username, password));
 
 	channel = libssh2_channel_open_session(session);
 	printf("channel open: %d\n", channel);
 
-	printf("sending command \"%s\"\n", command);
-	rc = libssh2_channel_exec(channel, command);
-	printf("libssh2_channel_exec rc %s\n", libssh2_error_string(rc));
+	SSH_CHECK(libssh2_channel_exec(channel, command));
 
 	// read from the channel
 	rc = libssh2_channel_read(channel, buffer, buffer_size);
@@ -262,23 +248,18 @@ void do_ssh_connection(void)
 		printf("channel read error: %s\n", libssh2_error_string(rc));
 	}
 
-	rc = libssh2_channel_close(channel);
-	printf("libssh2_channel_close rc %s\n", libssh2_error_string(rc));
+	libssh2_cleanup:
 
+	libssh2_channel_close(channel);
 	libssh2_channel_free(channel);
-
 	libssh2_session_disconnect(session, "Normal Shutdown, Thank you for playing");
-
 	libssh2_session_free(session);
-
 	libssh2_exit();
 
 	// request to close the TCP connection
-	rc = OTSndOrderlyDisconnect(endpoint);
-	assertp("OTSndOrderlyDisconnect failed", rc == noErr);
+	OT_CHECK(OTSndOrderlyDisconnect(endpoint));
 
-	// get any remaining data so we can finish closing the connection
-	OTFlags ot_flags;
+	// get and discard remaining data so we can finish closing the connection
 	rc = 1;
 	while (rc != kOTLookErr)
 	{
@@ -286,26 +267,28 @@ void do_ssh_connection(void)
 	}
 
 	// finish closing the TCP connection
-	OTResult look_result = OTLook(endpoint);
-	switch (look_result)
+	result = OTLook(endpoint);
+	switch (result)
 	{
 		case T_DISCONNECT:
-			err = OTRcvDisconnect(endpoint, nil);
+			OTRcvDisconnect(endpoint, nil);
 			break;
 
 		default:
-			printf("other connection error: %d\n", look_result);
+			printf("unexpected OTLook result while closing: %d\n", result);
 			break;
 	}
 
+	OT_cleanup:
+
 	// release endpoint
-	result = OTUnbind(endpoint);
-	assertp("OTUnbind failed", result == noErr);
+	err = OTUnbind(endpoint);
+	if (err != noErr) printf("OTUnbind failed: %d\n", err);
 
-	result = OTCloseProvider(endpoint);
-	assertp("OTCloseProvider failed", result == noErr);
+	err = OTCloseProvider(endpoint);
+	if (err != noErr) printf("OTCloseProvider failed: %d\n", err);
 
-	// if we got a buffer, release it
+	// if we have a buffer, release it
 	if (buffer != nil) OTFreeMem(buffer);
 
 	return;
@@ -313,20 +296,40 @@ void do_ssh_connection(void)
 
 int main(int argc, char** argv)
 {
-	printf("starting up\n");
+	char hostname[input_buffer_size] = {0};
+	char username[input_buffer_size] = {0};
+	char password[input_buffer_size] = {0};
+	char command[input_buffer_size] = {0};
+
+	printf("WARNING: this is a prototype with a bad RNG and no host key checks,"
+		" do not use over untrusted networks or with untrusted SSH servers!\n\n");
+
+	printf("ssheven by cy384 version 0.0.0\n\n");
+
+	printf("enter a host:port >"); fflush(stdout);
+	get_line(hostname);
+
+	printf("enter a username  >"); fflush(stdout);
+	get_line(username);
+
+	printf("enter a password  >"); fflush(stdout);
+	get_line(password);
+
+	printf("enter a command   >"); fflush(stdout);
+	get_line(command);
 
 	if (InitOpenTransport() != noErr)
 	{
-		printf("failed to init OT \n");
+		printf("failed to initialize OT\n");
 		return 0;
 	}
 
-	do_ssh_connection();
+	do_ssh_connection(hostname, username, password, command);
 
 	CloseOpenTransport();
 
-	printf("\n(a to exit)\n");
-	while (getchar() != 'a');
+	printf("\n(enter to exit)\n");
+	getchar();
 
 	return 0;
 }
