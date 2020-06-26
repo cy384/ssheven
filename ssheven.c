@@ -21,7 +21,8 @@
 // functions to convert error and status codes to strings
 #include "ssheven-debug.h"
 
-#define SSHEVEN_VERSION "0.0.0"
+// version string
+#define SSHEVEN_VERSION "0.0.1"
 
 // network buffer size
 enum { buffer_size = 4096 };
@@ -171,10 +172,20 @@ void do_ssh_connection(char* hostname, char* username, char* password, char* com
 			OTRcvDisconnect(endpoint, nil);
 			break;
 
+		case T_ORDREL:
+			err = OTRcvOrderlyDisconnect(endpoint);
+			if (err == noErr)
+			{
+				err = OTSndOrderlyDisconnect(endpoint);
+			}
+			break;
+
 		default:
-			printf("unexpected OTLook result while closing: %d\n", result);
+			printf("unexpected OTLook result while closing: %s\n", OT_event_string(result));
 			break;
 	}
+
+
 
 	OT_cleanup:
 
