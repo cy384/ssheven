@@ -1,6 +1,6 @@
-// handy debugging string conversions
+/* handy debugging string conversions */
 
-// convert libssh2 errors into strings
+/* convert libssh2 errors into strings */
 const char* libssh2_error_string(int i)
 {
 	switch (i)
@@ -109,7 +109,7 @@ const char* libssh2_error_string(int i)
 	return "libssh2_error_string should never return from here";
 }
 
-// convert OT event types into strings
+/* convert OT event types into strings */
 const char* OT_event_string(int i)
 {
 	switch (i)
