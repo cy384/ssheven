@@ -356,7 +356,7 @@ void ssh_setup_terminal(void)
 	SSH_CHECK(libssh2_channel_shell(ssh_con.channel));
 }
 
-void intro_dialog(char* hostname, char* username, char* password)
+int intro_dialog(char* hostname, char* username, char* password)
 {
 
 	// modal dialog setup
@@ -394,7 +394,7 @@ void intro_dialog(char* hostname, char* username, char* password)
 	short item;
 	do {
 		ModalDialog(NULL, &item);
-	} while(item != 1);
+	} while(item != 1 && item != 9);
 
 	// copy the text out of the boxes
 	GetDialogItemText((Handle)address_text_box, hostname);
@@ -404,6 +404,9 @@ void intro_dialog(char* hostname, char* username, char* password)
 	// clean it up
 	CloseDialog(dlg);
 	FlushEvents(everyEvent, -1);
+
+	// if we hit cancel, 0
+	if (item == 9) return 0; else return 1;
 }
 
 //enum { WAIT, READ, EXIT } read_thread_command = WAIT;
@@ -461,7 +464,7 @@ int main(int argc, char** argv)
 	InitWindows();
 	InitMenus();
 
-	intro_dialog(hostname, username, password);
+	if (!intro_dialog(hostname, username, password)) return 0;
 
 	console_setup();
 

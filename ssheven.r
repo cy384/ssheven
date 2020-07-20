@@ -36,6 +36,9 @@ resource 'DITL' (128) {
 
 		{ 135, 10, 151, 310 },
 		EditText { enabled, "" };
+
+		{ 190-10-20, 10, 190-10, 90 },
+		Button { enabled, "Cancel" };
 	}
 };
 
