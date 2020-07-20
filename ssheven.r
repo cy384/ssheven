@@ -1,3 +1,5 @@
+#include "ssheven-constants.r"
+
 #include "Dialogs.r"
 
 resource 'DLOG' (128) {
@@ -61,29 +63,36 @@ resource 'SIZE' (-1) {
 	reserved,
 	reserved,
 	reserved,
-	1024 * 1024,
-	1024 * 1024
+	SSHEVEN_MINIMUM_PARTITION,
+	SSHEVEN_REQUIRED_PARTITION
 };
 
 
 #include "MacTypes.r"
 /* see macintosh tb essentials page 7-31 */
+/* yes, we need two */
+/* first one displayed in version field of info window */
 resource 'vers' (1, purgeable) {
-	0x01, 0x00, development, 0x01, verUS,
-	"0.1.0",
-	"0.1.0 prerelease, by cy384"
+	SSHEVEN_VERSION_MAJOR, SSHEVEN_VERSION_MINOR,
+	SSHEVEN_RELEASE_TYPE, SSHEVEN_VERSION_PRERELEASE,
+	SSHEVEN_RELEASE_REGION,
+	SSHEVEN_VERSION,
+	SSHEVEN_LONG_VERSION
 };
 
+/* second one displayed beneath icon at top of info window */
 resource 'vers' (2, purgeable) {
-	0x01, 0x00, development, 0x01, verUS,
-	"0.1.0",
-	"0.1.0 prerelease, by cy384"
+	SSHEVEN_VERSION_MAJOR, SSHEVEN_VERSION_MINOR,
+	SSHEVEN_RELEASE_TYPE, SSHEVEN_VERSION_PRERELEASE,
+	SSHEVEN_RELEASE_REGION,
+	SSHEVEN_VERSION,
+	SSHEVEN_LONG_VERSION
 };
 
 /* signature resource */
 type 'SSH7' as 'STR ';
 resource 'SSH7' (0, purgeable) {
-	"ssheven 0.1.0 by cy384"
+	SSHEVEN_DESCRIPTION
 };
 
 #include "Finder.r"

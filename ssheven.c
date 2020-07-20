@@ -57,7 +57,7 @@ static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult r
 // read from the channel and print to console
 void ssh_read(void)
 {
-	int rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, BUFFER_SIZE);
+	int rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
 
 	if (rc == 0) return;
 
@@ -352,7 +352,7 @@ void ssh_setup_terminal(void)
 {
 	int rc = 0;
 
-	SSH_CHECK(libssh2_channel_request_pty(ssh_con.channel, TERMINAL_TYPE));
+	SSH_CHECK(libssh2_channel_request_pty(ssh_con.channel, SSHEVEN_TERMINAL_TYPE));
 	SSH_CHECK(libssh2_channel_shell(ssh_con.channel));
 }
 
@@ -492,8 +492,8 @@ int main(int argc, char** argv)
 
 	if (ok)
 	{
-		ssh_con.recv_buffer = OTAllocMem(BUFFER_SIZE);
-		ssh_con.send_buffer = OTAllocMem(BUFFER_SIZE);
+		ssh_con.recv_buffer = OTAllocMem(SSHEVEN_BUFFER_SIZE);
+		ssh_con.send_buffer = OTAllocMem(SSHEVEN_BUFFER_SIZE);
 
 		if (ssh_con.recv_buffer == NULL || ssh_con.send_buffer == NULL)
 		{

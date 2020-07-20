@@ -22,15 +22,8 @@
 // libssh2
 #include <libssh2.h>
 
-// version string
-#define SSHEVEN_VERSION "0.1.0"
-
-// size for recv and send thread buffers
-#define BUFFER_SIZE 4096
-
-// terminal type to send over ssh, determines features etc.
-// "vanilla" supports basically nothing, which is good for us here
-#define TERMINAL_TYPE "vanilla"
+// ssheven constants
+#include "ssheven-constants.r"
 
 // sinful globals
 struct ssheven_console
