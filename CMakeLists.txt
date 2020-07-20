@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-add_application(ssheven CREATOR "SSH7" ssheven.c ssheven.r)
+add_application(ssheven CREATOR "SSH7" ssheven.c ssheven-console.c ssheven.r)
 
 set_target_properties(ssheven PROPERTIES COMPILE_OPTIONS -ffunction-sections)
 

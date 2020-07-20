@@ -1,3 +1,10 @@
+/* 
+ * ssheven
+ * 
+ * Copyright (c) 2020 by cy384 <cy384@cy384.com>
+ * See LICENSE file for details
+ */
+
 /* handy debugging string conversions */
 
 /* convert libssh2 errors into strings */
