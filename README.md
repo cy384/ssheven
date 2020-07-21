@@ -10,6 +10,14 @@ Project status: as of 0.1.0 (see github releases), an actual SSH client, with a 
 * console emulation: very basic, no escape codes or anything yet (to be implemented with libvterm soon)
 * UI/UX: it quits when you click the close button! (i.e. basically nothing yet)
 
+system requirements
+-------------------
+* CPU: minimum m68k processor TBD, any PPC processor should be fast enough
+* RAM: requires around 1MB, exact value TBD (adjust up via the info box if it crashes)
+* Disk space: currently about 1MB for the fat binary, or about 600KB for one platform
+* System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
+* Open Transport networking required, version 1.1.1 recommended minimum
+
 build
 -----
 More details to come as functionality is added.
