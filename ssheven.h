@@ -18,6 +18,7 @@
 #include <Fonts.h>
 #include <Windows.h>
 #include <Sound.h>
+#include <Gestalt.h>
 
 // libssh2
 #include <libssh2.h>

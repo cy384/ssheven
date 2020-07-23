@@ -1,4 +1,4 @@
-/* used as both a C and resource file include, so keep it simple */
+/* used as both a C and resource file include */
 
 #ifndef __SSHEVEN_CONSTANTS_R__
 #define __SSHEVEN_CONSTANTS_R__
@@ -16,14 +16,21 @@
 #define SSHEVEN_RELEASE_REGION      verUS
 
 /* requested number of bytes for RAM, used in SIZE resource */
-#define SSHEVEN_MINIMUM_PARTITION  1024*1024
-#define SSHEVEN_REQUIRED_PARTITION SSHEVEN_MINIMUM_PARTITION
+#define SSHEVEN_MINIMUM_PARTITION   1024*1024
+#define SSHEVEN_REQUIRED_PARTITION  SSHEVEN_MINIMUM_PARTITION
 
-/* size for recv and send thread buffers */
+/* size in bytes for recv and send thread buffers */
 #define SSHEVEN_BUFFER_SIZE 4096
 
 /* terminal type to send over ssh, determines features etc.
  * "vanilla" supports basically nothing, which is good for us here */
 #define SSHEVEN_TERMINAL_TYPE "vanilla"
+
+#define ALRT_OT 128
+#define DITL_OT 129
+
+#define DLOG_CONNECT 128
+#define DITL_CONNECT 128
+
 
 #endif

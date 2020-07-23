@@ -2,7 +2,7 @@
 
 #include "Dialogs.r"
 
-resource 'DLOG' (128) {
+resource 'DLOG' (DLOG_CONNECT) {
 	{ 50, 100, 240, 420 },
 	dBoxProc,
 	visible,
@@ -13,7 +13,7 @@ resource 'DLOG' (128) {
 	centerMainScreen
 };
 
-resource 'DITL' (128) {
+resource 'DITL' (DITL_CONNECT) {
 	{
 		{ 190-10-20, 320-10-80, 190-10, 320-10 },
 		Button { enabled, "Connect" };
@@ -42,6 +42,30 @@ resource 'DITL' (128) {
 		{ 190-10-20, 10, 190-10, 90 },
 		Button { enabled, "Cancel" };
 	}
+};
+
+resource 'DITL' (DITL_OT) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "Exit" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Open Transport required but not found!" };
+	}
+};
+
+resource 'ALRT' (ALRT_OT, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_OT,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
 };
 
 #include "Processes.r"
@@ -97,7 +121,7 @@ resource 'SSH7' (0, purgeable) {
 
 #include "Finder.r"
 resource 'FREF' (128, purgeable) {
-   'APPL', 0, ""
+	'APPL', 0, ""
 };
 
 resource 'BNDL' (128, purgeable) {
