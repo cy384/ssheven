@@ -476,6 +476,7 @@ int safety_checks(void)
 	// bit one is prescence of thread manager
 	if (err != noErr || (thread_manager_gestalt & (1 << gestaltThreadMgrPresent)) == 0)
 	{
+		StopAlert(ALRT_TM, nil);
 		print_string_i("Thread Manager not available!\n");
 		return 0;
 	}
@@ -566,6 +567,10 @@ int main(int argc, char** argv)
 	int ok = 1;
 
 	if (!safety_checks()) return 0;
+
+	BeginUpdate(con.win);
+	draw_screen(&(con.win->portRect));
+	EndUpdate(con.win);
 
 	if (!intro_dialog(hostname, username, password)) ok = 0;
 

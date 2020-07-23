@@ -68,6 +68,30 @@ resource 'ALRT' (ALRT_OT, purgeable) {
 	alertPositionMainScreen
 };
 
+resource 'DITL' (DITL_TM) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "Exit" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Thread Manager required but not found!" };
+	}
+};
+
+resource 'ALRT' (ALRT_TM, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	ALRT_TM,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
 #include "Processes.r"
 
 resource 'SIZE' (-1) {
