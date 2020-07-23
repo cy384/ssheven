@@ -107,6 +107,22 @@ void print_char(char c)
 	}
 }
 
+void print_int(int d)
+{
+	char itoc[] = {'0','1','2','3','4','5','6','7','8','9'};
+
+	char buffer[12] = {0};
+	int i = 10;
+
+	for (; d > 0; i--)
+	{
+		buffer[i] = itoc[d % 10];
+		d /= 10;
+	}
+
+	print_string(buffer+i+1);
+}
+
 void print_string_i(const char* c)
 {
 	print_string(c);

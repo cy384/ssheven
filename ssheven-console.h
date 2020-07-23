@@ -22,6 +22,7 @@ int is_printable(char c);
 void print_char(char c);
 void print_string(const char* c);
 void print_string_i(const char* c);
+void print_int(int d);
 
 void set_window_title(WindowPtr w, const char* c_name);
 
