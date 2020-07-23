@@ -114,6 +114,12 @@ void print_int(int d)
 	char buffer[12] = {0};
 	int i = 10;
 
+	if (d == 0)
+	{
+		buffer[0] = '0';
+		i = -1;
+	}
+
 	for (; d > 0; i--)
 	{
 		buffer[i] = itoc[d % 10];
