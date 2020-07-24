@@ -10,6 +10,11 @@
 
 void draw_char(int x, int y, Rect* r, char c)
 {
+	// don't clobber font settings
+	short save_font = qd.thePort->txFont;
+	short save_font_size = qd.thePort->txSize;
+	short save_font_face = qd.thePort->txFace;
+
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
@@ -19,6 +24,10 @@ void draw_char(int x, int y, Rect* r, char c)
 
 	MoveTo(r->left + x * cell_width + 2, r->top + ((y+1) * cell_height) - 2);
 	DrawChar(c);
+
+	TextFont(save_font);
+	TextSize(save_font_size);
+	TextFace(save_font_face);
 }
 
 void draw_screen(Rect* r)
@@ -156,12 +165,21 @@ void set_window_title(WindowPtr w, const char* c_name)
 
 void console_setup(void)
 {
+	// don't clobber font settings
+	short save_font = qd.thePort->txFont;
+	short save_font_size = qd.thePort->txSize;
+	short save_font_face = qd.thePort->txFace;
+
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
 
 	int cell_height = 12;
 	int cell_width = CharWidth('M');
+
+	TextFont(save_font);
+	TextSize(save_font_size);
+	TextFace(save_font_face);
 
 	Rect initial_window_bounds = qd.screenBits.bounds;
 	InsetRect(&initial_window_bounds, 20, 20);
@@ -193,5 +211,6 @@ void console_setup(void)
 
 	con.cursor_x = 0;
 	con.cursor_y = 0;
+
 }
 
