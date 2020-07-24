@@ -12,8 +12,8 @@ Project status: as of 0.1.0 (see github releases), an actual SSH client, with a 
 
 system requirements
 -------------------
-* CPU: minimum m68k processor TBD, any PPC processor should be fast enough
-* RAM: requires around 1MB, exact value TBD (adjust up via the info box if it crashes)
+* CPU: at least a 68020, which may still be too slow.  Any PPC processor should be fast enough!
+* RAM: requires approx 2MB (adjust up via the info box if it crashes)
 * Disk space: currently about 1MB for the fat binary, or about 600KB for one platform
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
 * Open Transport networking required, version 1.1.1 recommended minimum

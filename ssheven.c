@@ -193,7 +193,7 @@ void event_loop(void)
 
 	// maximum length of time to sleep (in ticks)
 	// GetCaretTime gets the number of ticks between caret on/off time
-	long int sleep_time = GetCaretTime();
+	long int sleep_time = GetCaretTime() / 4;
 
 	do
 	{
