@@ -92,6 +92,54 @@ resource 'ALRT' (ALRT_TM, purgeable) {
 	alertPositionMainScreen
 };
 
+resource 'DITL' (DITL_CPU_SLOW) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "OK" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Your CPU is probably too slow!" };
+	}
+};
+
+resource 'ALRT' (ALRT_CPU_SLOW, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_CPU_SLOW,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
+resource 'DITL' (DITL_CPU_BAD) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "OK" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "SSHeven requires a 68020 or later!" };
+	}
+};
+
+resource 'ALRT' (ALRT_CPU_BAD, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_CPU_BAD,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
 #include "Processes.r"
 
 resource 'SIZE' (-1) {

@@ -2,21 +2,32 @@
 
 ssheven
 -------
-A modern SSH client for Mac OS 7/8/9 on m68k and PPC machines.
+A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.1.0 (see github releases), an actual SSH client, with a zero-features "vanilla" fixed-size terminal
-
-* encryption libraries: ham-handedly ported and fairly functional
-* console emulation: very basic, no escape codes or anything yet (to be implemented with libvterm soon)
-* UI/UX: it quits when you click the close button! (i.e. basically nothing yet)
+Project status: as of 0.2.0 (see github releases), an actual SSH client that only crashes or locks up sometimes, with a zero-features "vanilla" fixed-size terminal
 
 system requirements
 -------------------
-* CPU: at least a 68020, which may still be too slow.  Any PPC processor should be fast enough!
+* CPU: 33 MHz 68040 (or 68LC040) might be fast enough to connect without timeouts (even with mbedtls's hand written assembly in the slow part!).  Any PPC processor should be fine.
 * RAM: requires approx 2MB (adjust up via the info box if it crashes)
 * Disk space: currently about 1MB for the fat binary, or about 600KB for one platform
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
 * Open Transport networking required, version 1.1.1 recommended minimum
+
+to do
+-----
+* terminal resizing
+* proper region invalidation/redraw
+* good console emulation (to be implemented with libvterm)
+* menus
+* saving/loading connection settings
+* nicer connection dialog
+* preferences
+* better error checking
+* key authentication
+* check server keys/known keys
+* copy/paste
+* figure out how to improve 68k performance (possibly impossible)
 
 build
 -----

@@ -468,9 +468,9 @@ void* read_thread(void* arg)
 int safety_checks(void)
 {
 	OSStatus err;
-	long int thread_manager_gestalt = 0;
 
 	// check for thread manager
+	long int thread_manager_gestalt = 0;
 	err = Gestalt(gestaltThreadMgrAttr, &thread_manager_gestalt);
 
 	// bit one is prescence of thread manager
@@ -529,6 +529,43 @@ int safety_checks(void)
 	print_char('.');
 	print_int(ot_version->minorAndBugRev & 0x0F);
 	print_string_i("\n");
+
+	// check for CPU type and display warning if it's going to be too slow
+	long int cpu_type = 0;
+	int cpu_slow = 0;
+	int cpu_bad = 0;
+	err = Gestalt(gestaltNativeCPUtype, &cpu_type);
+	if (err != noErr || cpu_type == 0)
+	{
+		// earlier than 7.5, need to use other gestalt
+		err = Gestalt(gestaltProcessorType, &cpu_type);
+		if (err != noErr || cpu_type == 0)
+		{
+			CautionAlert(ALRT_CPU_SLOW, nil);
+			print_string_i("Failed to detect CPU type, continuing anyway.\n");
+		}
+		else
+		{
+			if (cpu_type <= gestalt68010) cpu_bad = 1;
+			if (cpu_type <= gestalt68030) cpu_slow = 1;
+		}
+	}
+	else
+	{
+		if (cpu_type <= gestaltCPU68010) cpu_bad = 1;
+		if (cpu_type <= gestaltCPU68030) cpu_slow = 1;
+	}
+
+	if (cpu_bad)
+	{
+		StopAlert(ALRT_CPU_BAD, nil);
+		return 0;
+	}
+
+	if (cpu_slow)
+	{
+		CautionAlert(ALRT_CPU_SLOW, nil);
+	}
 
 	return 1;
 }

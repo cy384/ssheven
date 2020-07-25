@@ -26,17 +26,25 @@
  * "vanilla" supports basically nothing, which is good for us here */
 #define SSHEVEN_TERMINAL_TYPE "vanilla"
 
-/* alert for failure to find OT */
-#define ALRT_OT 128
-#define DITL_OT 129
-
 /* dialog for getting connection info */
 #define DLOG_CONNECT 128
 #define DITL_CONNECT 128
 
+/* alert for failure to find OT */
+#define ALRT_OT 129
+#define DITL_OT 129
+
 /* alert for failure to find thread manager */
-#define ALRT_TM 128
-#define DITL_TM 129
+#define ALRT_TM 130
+#define DITL_TM 130
+
+/* alert for slow CPU detected */
+#define ALRT_CPU_SLOW 131
+#define DITL_CPU_SLOW 131
+
+/* alert for pre-68020 detected */
+#define ALRT_CPU_BAD 132
+#define DITL_CPU_BAD 132
 
 
 #endif
