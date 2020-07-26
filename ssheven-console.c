@@ -147,10 +147,52 @@ void print_string_i(const char* c)
 
 void print_string(const char* c)
 {
-	for (int i = 0; i < strlen(c); i++)
+	while (*c != '\0')
 	{
-		print_char(c[i]);
+		print_char(*c++);
 	}
+}
+
+void printf_i(const char* str, ...)
+{
+	va_list args;
+	va_start(args, str);
+
+	while (*str != '\0')
+	{
+		if (*str == '%')
+		{
+			str++;
+			switch (*str)
+			{
+				case 'd':
+					print_int(va_arg(args, int));
+					break;
+				case 's':
+					print_string(va_arg(args, char*));
+				default:
+					va_arg(args, int); // ignore
+					print_char('%');
+					print_char(*str);
+					break;
+			}
+		}
+		else if (*str == '\\')
+		{
+			str++;
+			print_char(*str);
+		}
+		else
+		{
+			print_char(*str);
+		}
+
+		str++;
+	}
+
+	InvalRect(&(con.win->portRect));
+
+	va_end(args);
 }
 
 void set_window_title(WindowPtr w, const char* c_name)

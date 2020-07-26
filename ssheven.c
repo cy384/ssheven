@@ -12,8 +12,8 @@
 #include "ssheven-debug.c"
 
 // error checking convenience macros
-#define OT_CHECK(X) err = (X); if (err != noErr) { print_string_i("" #X " failed\n"); return 0; };
-#define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { print_string("" #X " failed: "); print_string(libssh2_error_string(rc)); print_string("\n"); return 0;};
+#define OT_CHECK(X) err = (X); if (err != noErr) { printf_i("" #X " failed\n"); return 0; };
+#define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
 struct ssheven_console con = { NULL, {0}, 0, 0 };
@@ -67,9 +67,7 @@ void ssh_read(void)
 	}
 	else
 	{
-		print_string("channel read error: ");
-		print_string(libssh2_error_string(rc));
-		print_string("\n");
+		printf_i("channel read error: %s\n", libssh2_error_string(rc));
 	}
 
 	// TODO invalidate only the correct region
@@ -124,18 +122,16 @@ int end_connection(void)
 				break;
 
 			default:
-				print_string("unexpected OTLook result while closing: ");
-				print_string(OT_event_string(result));
-				print_string("\n");
+				printf_i("unexpected OTLook result while closing: %s\n", OT_event_string(result));
 				break;
 		}
 
 		// release endpoint
 		err = OTUnbind(ssh_con.endpoint);
-		if (err != noErr) print_string("OTUnbind failed\n");
+		if (err != noErr) printf_i("OTUnbind failed\n");
 
 		err = OTCloseProvider(ssh_con.endpoint);
-		if (err != noErr) print_string("OTCloseProvider failed\n");
+		if (err != noErr) printf_i("OTCloseProvider failed\n");
 	}
 
 	read_thread_state = DONE;
@@ -285,14 +281,14 @@ int init_connection(char* hostname)
 	DNSAddress hostDNSAddress;
 	OSStatus result;
 
-	print_string_i("opening and configuring endpoint... "); YieldToAnyThread();
+	printf_i("opening and configuring endpoint... "); YieldToAnyThread();
 
 	// open TCP endpoint
 	ssh_con.endpoint = OTOpenEndpoint(OTCreateConfiguration(kTCPName), 0, nil, &err);
 
 	if (err != noErr || ssh_con.endpoint == kOTInvalidEndpointRef)
 	{
-		print_string_i("failed to open OT TCP endpoint\n");
+		printf_i("failed to open OT TCP endpoint\n");
 		return 0;
 	}
 
@@ -305,7 +301,7 @@ int init_connection(char* hostname)
 
 	OT_CHECK(OTSetNonBlocking(ssh_con.endpoint));
 
-	print_string_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\n"); YieldToAnyThread();
 
 	// set up address struct, do the DNS lookup, and connect
 	OTMemzero(&sndCall, sizeof(TCall));
@@ -313,30 +309,30 @@ int init_connection(char* hostname)
 	sndCall.addr.buf = (UInt8 *) &hostDNSAddress;
 	sndCall.addr.len = OTInitDNSAddress(&hostDNSAddress, (char *) hostname);
 
-	print_string_i("connecting endpoint... "); YieldToAnyThread();
+	printf_i("connecting endpoint... "); YieldToAnyThread();
 	OT_CHECK(OTConnect(ssh_con.endpoint, &sndCall, nil));
 
-	print_string_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\n"); YieldToAnyThread();
 
-	print_string_i("initializing SSH... "); YieldToAnyThread();
+	printf_i("initializing SSH... "); YieldToAnyThread();
 	// init libssh2
 	SSH_CHECK(libssh2_init(0));
 
-	print_string_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\n"); YieldToAnyThread();
 
-	print_string_i("opening SSH session... "); YieldToAnyThread();
+	printf_i("opening SSH session... "); YieldToAnyThread();
 	ssh_con.session = libssh2_session_init();
 	if (ssh_con.session == 0)
 	{
-		print_string("failed to initialize SSH library\n");
+		printf_i("failed to initialize SSH library\n");
 		return 0;
 	}
-	print_string_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\n"); YieldToAnyThread();
 
-	print_string_i("beginning SSH session handshake... "); YieldToAnyThread();
+	printf_i("beginning SSH session handshake... "); YieldToAnyThread();
 	SSH_CHECK(libssh2_session_handshake(ssh_con.session, ssh_con.endpoint));
 
-	print_string_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\n"); YieldToAnyThread();
 
 	read_thread_state = OPEN;
 
@@ -438,9 +434,9 @@ void* read_thread(void* arg)
 
 	if (ok)
 	{
-		print_string_i("authenticating... "); YieldToAnyThread();
+		printf_i("authenticating... "); YieldToAnyThread();
 		ok = ssh_password_auth(username+1, password+1);
-		print_string_i("done.\n"); YieldToAnyThread();
+		printf_i("done.\n"); YieldToAnyThread();
 	}
 
 	if (ok)
@@ -477,7 +473,7 @@ int safety_checks(void)
 	if (err != noErr || (thread_manager_gestalt & (1 << gestaltThreadMgrPresent)) == 0)
 	{
 		StopAlert(ALRT_TM, nil);
-		print_string_i("Thread Manager not available!\n");
+		printf_i("Thread Manager not available!\n");
 		return 0;
 	}
 
@@ -493,7 +489,7 @@ int safety_checks(void)
 
 	if (err != noErr)
 	{
-		print_string_i("Failed to check for Open Transport!\n");
+		printf_i("Failed to check for Open Transport!\n");
 		return 0;
 	}
 
@@ -501,34 +497,29 @@ int safety_checks(void)
 
 	if (err != noErr)
 	{
-		print_string_i("Failed to check for Open Transport!\n");
+		printf_i("Failed to check for Open Transport!\n");
 		return 0;
 	}
 
 	if (open_transport_any_version == 0 && open_transport_new_version == 0)
 	{
-		print_string_i("Open Transport required but not found!\n");
+		printf_i("Open Transport required but not found!\n");
 		StopAlert(ALRT_OT, nil);
 		return 0;
 	}
 
 	if (open_transport_any_version != 0 && open_transport_new_version == 0)
 	{
-		print_string_i("Early version of Open Transport detected!");
-		print_string_i("  Attempting to continue anyway.\n");
+		printf_i("Early version of Open Transport detected!");
+		printf_i("  Attempting to continue anyway.\n");
 	}
 
 	NumVersion* ot_version = (NumVersion*) &open_transport_new_version;
 
-	print_string_i("Detected Open Transport version: ");
-	// "1st part of version number in BCD"
-	print_int(ot_version->majorRev);
-	print_char('.');
-	// "2nd & 3rd part of version number share a byte"
-	print_int((ot_version->minorAndBugRev & 0xF0) >> 4); 
-	print_char('.');
-	print_int(ot_version->minorAndBugRev & 0x0F);
-	print_string_i("\n");
+	printf_i("Detected Open Transport version: %d.%d.%d\n",
+		(int)ot_version->majorRev,
+		(int)((ot_version->minorAndBugRev & 0xF0) >> 4),
+		(int)(ot_version->minorAndBugRev & 0x0F));
 
 	// check for CPU type and display warning if it's going to be too slow
 	long int cpu_type = 0;
@@ -541,8 +532,8 @@ int safety_checks(void)
 		err = Gestalt(gestaltProcessorType, &cpu_type);
 		if (err != noErr || cpu_type == 0)
 		{
-			CautionAlert(ALRT_CPU_SLOW, nil);
-			print_string_i("Failed to detect CPU type, continuing anyway.\n");
+			cpu_slow = 1;
+			printf_i("Failed to detect CPU type, continuing anyway.\n");
 		}
 		else
 		{
@@ -556,12 +547,14 @@ int safety_checks(void)
 		if (cpu_type <= gestaltCPU68030) cpu_slow = 1;
 	}
 
+	// if we don't have at least a 68020, stop
 	if (cpu_bad)
 	{
 		StopAlert(ALRT_CPU_BAD, nil);
 		return 0;
 	}
 
+	// if we don't have at least a 68040, warn
 	if (cpu_slow)
 	{
 		CautionAlert(ALRT_CPU_SLOW, nil);
@@ -594,8 +587,8 @@ int main(int argc, char** argv)
 		"  ____) |___) | |  | |  __/\\ V /  __/ | | |\n"
 		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|\n";
 
-	print_string(logo);
-	print_string("by cy384, version " SSHEVEN_VERSION "\n");
+	printf_i(logo);
+	printf_i("by cy384, version " SSHEVEN_VERSION "\n");
 
 	BeginUpdate(con.win);
 	draw_screen(&(con.win->portRect));
@@ -615,7 +608,7 @@ int main(int argc, char** argv)
 	{
 		if (InitOpenTransport() != noErr)
 		{
-			print_string_i("failed to initialize OT\n");
+			printf_i("failed to initialize OT\n");
 			ok = 0;
 		}
 	}
@@ -627,7 +620,7 @@ int main(int argc, char** argv)
 
 		if (ssh_con.recv_buffer == NULL || ssh_con.send_buffer == NULL)
 		{
-			print_string_i("failed to allocate network buffers\n");
+			printf_i("failed to allocate network buffers\n");
 			ok = 0;
 		}
 	}
@@ -644,7 +637,7 @@ int main(int argc, char** argv)
 		if (err < 0)
 		{
 			ok = 0;
-			print_string("failed to create network read thread\n");
+			printf_i("failed to create network read thread\n");
 		}
 	}
 
