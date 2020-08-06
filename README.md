@@ -6,6 +6,8 @@ A modern SSH client for Mac OS 7/8/9.
 
 Project status: as of 0.3.0 (see github releases), an actual SSH client with a zero-features "vanilla" fixed-size terminal
 
+![ssheven screenshot](http://www.cy384.com/media/img/ssheven-screenshot.png)
+
 system requirements
 -------------------
 * CPU: 33 MHz 68040 (or 68LC040) might be fast enough to connect without timeouts (any PPC processor should be fine)
