@@ -46,5 +46,14 @@
 #define ALRT_CPU_BAD 132
 #define DITL_CPU_BAD 132
 
+/* about info window */
+#define DLOG_ABOUT 133
+#define DITL_ABOUT 133
+#define PICT_ABOUT 133
+
+/* menus */
+#define SSHEVEN_MBAR 128
+#define MENU_APPLE 128
+#define MENU_FILE 129
 
 #endif

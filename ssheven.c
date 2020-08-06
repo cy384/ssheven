@@ -181,6 +181,53 @@ void check_network_events(void)
 	return;
 }
 
+void display_about_box(void)
+{
+	DialogRef about = GetNewDialog(DLOG_ABOUT, 0, (WindowPtr)-1);
+
+	UpdateDialog(about, about->visRgn);
+
+	while (!Button()) YieldToAnyThread();
+	while (Button()) YieldToAnyThread();
+
+	FlushEvents(everyEvent, 0);
+	DisposeWindow(about);
+}
+
+/* returns 1 if quit selected, else 0 */
+int process_menu_select(int32_t result)
+{
+	int exit = 0;
+	int16_t menu = (result & 0xFFFF0000) >> 16;
+	int16_t item = (result & 0x0000FFFF);
+	Str255 name;
+
+	switch (menu)
+	{
+		case MENU_APPLE:
+			if (item == 1)
+			{
+				display_about_box();
+			}
+			else
+			{
+				GetMenuItemText(GetMenuHandle(menu), item, name);
+				OpenDeskAcc(name);
+			}
+			break;
+
+		case MENU_FILE:
+			if (item == 1) exit = 1;
+			break;
+
+		default:
+			break;
+	}
+
+	HiliteMenu(0);
+	return exit;
+}
+
 void event_loop(void)
 {
 	int exit_event_loop = 0;
@@ -256,6 +303,7 @@ void event_loop(void)
 						break;
 
 					case inMenuBar:
+						exit_event_loop = process_menu_select(MenuSelect(event.where));
 						break;
 
 					case inSysWindow:
@@ -366,7 +414,7 @@ int intro_dialog(char* hostname, char* username, char* password)
 	// modal dialog setup
 	TEInit();
 	InitDialogs(NULL);
-	DialogPtr dlg = GetNewDialog(128,0,(WindowPtr)-1);
+	DialogPtr dlg = GetNewDialog(DLOG_CONNECT, 0, (WindowPtr)-1);
 	InitCursor();
 
 	// select all text in dialog item 4 (the hostname+port one)
@@ -577,6 +625,11 @@ int main(int argc, char** argv)
 	InitFonts();
 	InitWindows();
 	InitMenus();
+
+	void* menu = GetNewMBar(SSHEVEN_MBAR);
+	SetMenuBar(menu);
+	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
+	DrawMenuBar();
 
 	console_setup();
 
