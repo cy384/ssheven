@@ -177,11 +177,6 @@ void printf_i(const char* str, ...)
 					break;
 			}
 		}
-		else if (*str == '\\')
-		{
-			str++;
-			print_char(*str);
-		}
 		else
 		{
 			print_char(*str);
