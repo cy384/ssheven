@@ -4,12 +4,12 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.2.0 (see github releases), an actual SSH client that only crashes or locks up sometimes, with a zero-features "vanilla" fixed-size terminal
+Project status: as of 0.3.0 (see github releases), an actual SSH client with a zero-features "vanilla" fixed-size terminal
 
 system requirements
 -------------------
-* CPU: 33 MHz 68040 (or 68LC040) might be fast enough to connect without timeouts (even with mbedtls's hand written assembly in the slow part!).  Any PPC processor should be fine.
-* RAM: requires approx 2MB (adjust up via the info box if it crashes)
+* CPU: 33 MHz 68040 (or 68LC040) might be fast enough to connect without timeouts (any PPC processor should be fine)
+* RAM: requires approx. 2MB
 * Disk space: currently about 1MB for the fat binary, or about 600KB for one platform
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
 * Open Transport networking required, version 1.1.1 recommended minimum
@@ -19,7 +19,6 @@ to do
 * terminal resizing
 * proper region invalidation/redraw
 * good console emulation (to be implemented with libvterm)
-* menus
 * saving/loading connection settings
 * nicer connection dialog
 * preferences
