@@ -254,6 +254,7 @@ void event_loop(void)
 
 		// handle any mac gui events
 		char c = 0;
+		int r = 0;
 		switch(event.what)
 		{
 			// TODO: don't redraw the whole screen, just do needed region
@@ -271,7 +272,16 @@ void event_loop(void)
 				{
 					if ('\r' == c) c = '\n';
 					ssh_con.send_buffer[0] = c;
-					if (read_thread_state == OPEN) libssh2_channel_write(ssh_con.channel, ssh_con.send_buffer, 1);
+					if (read_thread_state == OPEN && read_thread_command != EXIT)
+					{
+						r = libssh2_channel_write(ssh_con.channel, ssh_con.send_buffer, 1);
+						if (r < 1)
+						{
+							printf_i("failed to write to channel!\n");
+							printf_i("closing connection!\n");
+							read_thread_command = EXIT;
+						}
+					}
 				}
 
 			case mouseDown:
@@ -377,10 +387,11 @@ int init_connection(char* hostname)
 	}
 	printf_i("done.\n"); YieldToAnyThread();
 
+	long s = TickCount();
 	printf_i("beginning SSH session handshake... "); YieldToAnyThread();
 	SSH_CHECK(libssh2_session_handshake(ssh_con.session, ssh_con.endpoint));
 
-	printf_i("done.\n"); YieldToAnyThread();
+	printf_i("done. (%d ticks)\n", TickCount() - s); YieldToAnyThread();
 
 	read_thread_state = OPEN;
 
