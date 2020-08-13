@@ -235,7 +235,7 @@ resource 'BNDL' (128, purgeable) {
 
 resource 'MBAR' (SSHEVEN_MBAR, preload)
 {
-	{ MENU_APPLE, MENU_FILE };
+	{ MENU_APPLE, MENU_FILE, MENU_EDIT };
 };
 
 resource 'MENU' (MENU_APPLE) {
@@ -254,6 +254,23 @@ resource 'MENU' (MENU_FILE) {
 	"File";
 	{
 		"Quit", noIcon, "Q", noMark, plain;
+	}
+};
+
+resource 'MENU' (MENU_EDIT) {
+	MENU_EDIT, textMenuProc;
+	allEnabled, enabled;
+	"Edit";
+	{
+		"Undo", noIcon, "Z", noMark, plain;
+		"-", noIcon, noKey, noMark, plain;
+		"Cut", noIcon, "X", noMark, plain;
+		"Copy", noIcon, "C", noMark, plain;
+		"Paste", noIcon, "V", noMark, plain;
+		"Clear", noIcon, noKey, noMark, plain;
+		"Select All", noIcon, "A", noMark, plain;
+		"-", noIcon, noKey, noMark, plain;
+		"Show Clipboard", noIcon, noKey, noMark, plain;
 	}
 };
 

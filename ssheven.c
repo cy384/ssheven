@@ -640,6 +640,11 @@ int main(int argc, char** argv)
 	void* menu = GetNewMBar(SSHEVEN_MBAR);
 	SetMenuBar(menu);
 	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
+
+	// disable everything in the edit menu until we implement it
+	menu = GetMenuHandle(MENU_EDIT);
+	DisableItem(menu, 0);
+
 	DrawMenuBar();
 
 	console_setup();

@@ -53,7 +53,8 @@
 
 /* menus */
 #define SSHEVEN_MBAR 128
-#define MENU_APPLE 128
-#define MENU_FILE 129
+#define MENU_APPLE   128
+#define MENU_FILE    129
+#define MENU_EDIT    130
 
 #endif
