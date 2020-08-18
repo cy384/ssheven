@@ -260,6 +260,10 @@ void event_loop(void)
 			case keyDown:
 			case autoKey: // autokey means we're repeating a held down key event
 				c = event.message & charCodeMask;
+				if (c && (event.modifiers & cmdKey)) // apple key
+				{
+					if (c == 'q') exit_event_loop = 1;
+				}
 				if (c)
 				{
 					if ('\r' == c) c = '\n';
