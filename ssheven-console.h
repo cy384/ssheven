@@ -28,3 +28,5 @@ void printf_i(const char* c, ...);
 void set_window_title(WindowPtr w, const char* c_name);
 
 void ruler(Rect* r);
+
+Rect cell_rect(int x, int y, Rect bounds);

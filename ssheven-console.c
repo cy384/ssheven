@@ -10,6 +10,26 @@
 
 void draw_char(int x, int y, Rect* r, char c)
 {
+	MoveTo(r->left + x * con.cell_width + 2, r->top + ((y+1) * con.cell_height) - 2);
+	DrawChar(c);
+}
+
+}
+
+void draw_screen(Rect* r)
+{
+	// get the intersection of our console region and the update region
+	Rect bounds = (con.win->portRect);
+	SectRect(r, &bounds, r);
+
+	short minRow = (0 > (r->top - bounds.top) / con.cell_height) ? 0 : (r->top - bounds.top) / con.cell_height;
+	short maxRow = (24 < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? 24 : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
+
+	short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
+	short maxCol = (80 < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? 80 : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
+
+	EraseRect(r);
+
 	// don't clobber font settings
 	short save_font = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
@@ -19,23 +39,15 @@ void draw_char(int x, int y, Rect* r, char c)
 	TextSize(9);
 	TextFace(normal);
 
-	int cell_height = 12;
-	int cell_width  = CharWidth('M');
-
-	MoveTo(r->left + x * cell_width + 2, r->top + ((y+1) * cell_height) - 2);
-	DrawChar(c);
+	for(int i = minRow; i < maxRow; i++)
+	{
+		for (int j = minCol; j < maxCol; j++)
+			draw_char(j, i, r, con.data[j][i]);
+	}
 
 	TextFont(save_font);
 	TextSize(save_font_size);
 	TextFace(save_font_face);
-}
-
-void draw_screen(Rect* r)
-{
-	EraseRect(r);
-	for (int x = 0; x < 80; x++)
-		for (int y = 0; y < 24; y++)
-			draw_char(x, y, r, con.data[x][y]);
 }
 
 void ruler(Rect* r)
@@ -58,6 +70,8 @@ void bump_up_line()
 	}
 
 	for (int x = 0; x < 80; x++) con.data[x][23] = ' ';
+
+	InvalRect(&(con.win->portRect));
 }
 
 int is_printable(char c)
@@ -72,6 +86,8 @@ void print_char(char c)
 	{
 		// erase current location
 		con.data[con.cursor_x][con.cursor_y] = ' ';
+		Rect inval = cell_rect(con.cursor_x, con.cursor_y, (con.win->portRect));
+		InvalRect(&inval);
 
 		// wrap back to the previous line if possible and necessary
 		if (con.cursor_x == 0 && con.cursor_y != 0)
@@ -100,6 +116,8 @@ void print_char(char c)
 	if (is_printable(c))
 	{
 		con.data[con.cursor_x][con.cursor_y] = c;
+		Rect inval = cell_rect(con.cursor_x, con.cursor_y, (con.win->portRect));
+		InvalRect(&inval);
 		con.cursor_x++;
 	}
 
@@ -136,13 +154,6 @@ void print_int(int d)
 	}
 
 	print_string(buffer+i+1);
-}
-
-void print_string_i(const char* c)
-{
-	print_string(c);
-	// TODO invalidate only the correct region
-	InvalRect(&(con.win->portRect));
 }
 
 void print_string(const char* c)
@@ -185,8 +196,6 @@ void printf_i(const char* str, ...)
 		str++;
 	}
 
-	InvalRect(&(con.win->portRect));
-
 	va_end(args);
 }
 
@@ -211,8 +220,8 @@ void console_setup(void)
 	TextSize(9);
 	TextFace(normal);
 
-	int cell_height = 12;
-	int cell_width = CharWidth('M');
+	con.cell_height = 12;
+	con.cell_width = CharWidth('M');
 
 	TextFont(save_font);
 	TextSize(save_font_size);
@@ -222,8 +231,8 @@ void console_setup(void)
 	InsetRect(&initial_window_bounds, 20, 20);
 	initial_window_bounds.top += 40;
 
-	initial_window_bounds.bottom = initial_window_bounds.top + cell_height * 24 + 2;
-	initial_window_bounds.right = initial_window_bounds.left + cell_width * 80 + 4;
+	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * 24 + 2;
+	initial_window_bounds.right = initial_window_bounds.left + con.cell_width * 80 + 4;
 
 	// limits on window size changes:
 	// top = min vertical
@@ -248,6 +257,12 @@ void console_setup(void)
 
 	con.cursor_x = 0;
 	con.cursor_y = 0;
-
 }
 
+Rect cell_rect(int x, int y, Rect bounds)
+{
+	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
+		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
+
+	return r;
+}

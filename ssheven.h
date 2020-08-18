@@ -36,6 +36,9 @@ struct ssheven_console
 
 	int cursor_x;
 	int cursor_y;
+
+	int cell_height;
+	int cell_width;
 };
 
 extern struct ssheven_console con;

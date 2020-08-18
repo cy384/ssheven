@@ -19,7 +19,6 @@ system requirements
 to do
 -----
 * terminal resizing
-* proper region invalidation/redraw
 * good console emulation (to be implemented with libvterm)
 * saving/loading connection settings
 * nicer connection dialog

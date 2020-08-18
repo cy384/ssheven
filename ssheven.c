@@ -16,7 +16,7 @@
 #define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
-struct ssheven_console con = { NULL, {0}, 0, 0 };
+struct ssheven_console con = { NULL, {0}, 0, 0, 0 , 0 };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
@@ -69,9 +69,6 @@ void ssh_read(void)
 	{
 		printf_i("channel read error: %s\n", libssh2_error_string(rc));
 	}
-
-	// TODO invalidate only the correct region
-	InvalRect(&(con.win->portRect));
 }
 
 int end_connection(void)
@@ -244,10 +241,6 @@ void event_loop(void)
 		while (!WaitNextEvent(everyEvent, &event, sleep_time, NULL))
 		{
 			// timed out without any GUI events
-
-			// process any network events
-			//check_network_events();
-
 			// let any other threads run before we wait for events again
 			YieldToAnyThread();
 		}
@@ -257,7 +250,6 @@ void event_loop(void)
 		int r = 0;
 		switch(event.what)
 		{
-			// TODO: don't redraw the whole screen, just do needed region
 			case updateEvt:
 				eventWin = (WindowPtr)event.message;
 				BeginUpdate(eventWin);
