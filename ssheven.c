@@ -260,11 +260,19 @@ void event_loop(void)
 			case keyDown:
 			case autoKey: // autokey means we're repeating a held down key event
 				c = event.message & charCodeMask;
-				if (c && (event.modifiers & cmdKey)) // apple key
+				// if we have a key and command and it's not autorepeating
+				if (c && (event.modifiers & cmdKey) && event.what != autoKey)
 				{
-					if (c == 'q') exit_event_loop = 1;
+					switch(c)
+					{
+						case 'q':
+							exit_event_loop = 1;
+							break;
+						default:
+							break;
+					}
 				}
-				if (c)
+				else if (c)
 				{
 					if ('\r' == c) c = '\n';
 					ssh_con.send_buffer[0] = c;
