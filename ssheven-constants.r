@@ -52,7 +52,7 @@
 #define PICT_ABOUT 133
 
 /* menus */
-#define SSHEVEN_MBAR 128
+#define MBAR_SSHEVEN 128
 #define MENU_APPLE   128
 #define MENU_FILE    129
 #define MENU_EDIT    130

@@ -633,7 +633,7 @@ int main(int argc, char** argv)
 	InitWindows();
 	InitMenus();
 
-	void* menu = GetNewMBar(SSHEVEN_MBAR);
+	void* menu = GetNewMBar(MBAR_SSHEVEN);
 	SetMenuBar(menu);
 	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
 
