@@ -191,6 +191,35 @@ void display_about_box(void)
 	DisposeWindow(about);
 }
 
+void ssh_write(char* buf, int len)
+{
+	if (read_thread_state == OPEN && read_thread_command != EXIT)
+	{
+		int r = libssh2_channel_write(ssh_con.channel, buf, len);
+		if (r < 1)
+		{
+			printf_i("failed to write to channel!\n");
+			printf_i("closing connection!\n");
+			read_thread_command = EXIT;
+		}
+	}
+}
+
+void ssh_paste(void)
+{
+	// GetScrap requires a handle, not a raw buffer
+	// it will increase the size of the handle if needed
+	Handle buf = NewHandle(256);
+	int r = GetScrap(buf, 'TEXT', 0);
+
+	if (r > 0)
+	{
+		ssh_write(*buf, r);
+	}
+
+	DisposeHandle(buf);
+}
+
 /* returns 1 if quit selected, else 0 */
 int process_menu_select(int32_t result)
 {
@@ -215,6 +244,10 @@ int process_menu_select(int32_t result)
 
 		case MENU_FILE:
 			if (item == 1) exit = 1;
+			break;
+
+		case MENU_EDIT:
+			if (item == 5) ssh_paste();
 			break;
 
 		default:
@@ -268,6 +301,9 @@ void event_loop(void)
 						case 'q':
 							exit_event_loop = 1;
 							break;
+						case 'v':
+							ssh_paste();
+							break;
 						default:
 							break;
 					}
@@ -276,16 +312,7 @@ void event_loop(void)
 				{
 					if ('\r' == c) c = '\n';
 					ssh_con.send_buffer[0] = c;
-					if (read_thread_state == OPEN && read_thread_command != EXIT)
-					{
-						r = libssh2_channel_write(ssh_con.channel, ssh_con.send_buffer, 1);
-						if (r < 1)
-						{
-							printf_i("failed to write to channel!\n");
-							printf_i("closing connection!\n");
-							read_thread_command = EXIT;
-						}
-					}
+					ssh_write(ssh_con.send_buffer, 1);
 				}
 
 			case mouseDown:
@@ -635,6 +662,10 @@ int main(int argc, char** argv)
 	// also required before creating threads!
 	MaxApplZone();
 
+	// "Call the MoreMasters procedure several times at the beginning of your program"
+	MoreMasters();
+	MoreMasters();
+
 	// general gui setup
 	InitGraf(&qd.thePort);
 	InitFonts();
@@ -645,9 +676,14 @@ int main(int argc, char** argv)
 	SetMenuBar(menu);
 	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
 
-	// disable everything in the edit menu until we implement it
+	// disable stuff in edit menu until we implement it
 	menu = GetMenuHandle(MENU_EDIT);
-	DisableItem(menu, 0);
+	DisableItem(menu, 1);
+	DisableItem(menu, 3);
+	DisableItem(menu, 4);
+	DisableItem(menu, 6);
+	DisableItem(menu, 7);
+	DisableItem(menu, 9);
 
 	DrawMenuBar();
 
