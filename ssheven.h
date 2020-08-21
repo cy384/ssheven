@@ -20,6 +20,7 @@
 #include <Sound.h>
 #include <Gestalt.h>
 #include <Devices.h>
+#include <Scrap.h>
 
 // libssh2
 #include <libssh2.h>

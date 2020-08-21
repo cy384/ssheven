@@ -233,7 +233,7 @@ resource 'BNDL' (128, purgeable) {
 
 #include "Menus.r"
 
-resource 'MBAR' (SSHEVEN_MBAR, preload)
+resource 'MBAR' (MBAR_SSHEVEN, preload)
 {
 	{ MENU_APPLE, MENU_FILE, MENU_EDIT };
 };
