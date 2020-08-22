@@ -544,6 +544,10 @@ void* read_thread(void* arg)
 	// if we failed, exit
 	if (read_thread_state != OPEN) return 0;
 
+	// allow pasting
+	void* menu = GetMenuHandle(MENU_EDIT);
+	EnableItem(menu, 5);
+
 	// loop as long until we've failed or are asked to EXIT
 	while (read_thread_command == READ && read_thread_state == OPEN)
 	{
@@ -553,6 +557,8 @@ void* read_thread(void* arg)
 
 	// if we still have a connection, close it
 	if (read_thread_state != DONE) end_connection();
+
+	DisableItem(menu, 5);
 
 	return 0;
 }
@@ -687,6 +693,7 @@ int main(int argc, char** argv)
 	DisableItem(menu, 1);
 	DisableItem(menu, 3);
 	DisableItem(menu, 4);
+	DisableItem(menu, 5);
 	DisableItem(menu, 6);
 	DisableItem(menu, 7);
 	DisableItem(menu, 9);
