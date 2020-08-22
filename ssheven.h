@@ -40,6 +40,9 @@ struct ssheven_console
 
 	int cell_height;
 	int cell_width;
+
+	int cursor_state;
+	long int last_cursor_blink;
 };
 
 extern struct ssheven_console con;

@@ -30,3 +30,6 @@ void set_window_title(WindowPtr w, const char* c_name);
 void ruler(Rect* r);
 
 Rect cell_rect(int x, int y, Rect bounds);
+
+void toggle_cursor(void);
+void check_cursor(void);

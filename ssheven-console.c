@@ -14,8 +14,24 @@ void draw_char(int x, int y, Rect* r, char c)
 	DrawChar(c);
 }
 
+void toggle_cursor(void)
+{
+	con.cursor_state = !con.cursor_state;
+	Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
+	InvalRect(&cursor);
 }
 
+void check_cursor(void)
+{
+	long int now = TickCount();
+	if ((now - con.last_cursor_blink) > GetCaretTime())
+	{
+		toggle_cursor();
+		con.last_cursor_blink = now;
+	}
+}
+
+// closely inspired by the retro68 console library
 void draw_screen(Rect* r)
 {
 	// get the intersection of our console region and the update region
@@ -42,7 +58,20 @@ void draw_screen(Rect* r)
 	for(int i = minRow; i < maxRow; i++)
 	{
 		for (int j = minCol; j < maxCol; j++)
+		{
 			draw_char(j, i, r, con.data[j][i]);
+		}
+	}
+
+	// do the cursor if needed
+	if (con.cursor_state == 1 &&
+		con.cursor_y >= minRow &&
+		con.cursor_y <= maxRow &&
+		con.cursor_x >= minCol &&
+		con.cursor_x <= maxCol)
+	{
+		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
+		InvertRect(&cursor);
 	}
 
 	TextFont(save_font);

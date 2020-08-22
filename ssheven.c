@@ -16,7 +16,7 @@
 #define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
-struct ssheven_console con = { NULL, {0}, 0, 0, 0 , 0 };
+struct ssheven_console con = { NULL, {0}, 0, 0, 0, 0, 0, 0};
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
@@ -274,9 +274,15 @@ void event_loop(void)
 		while (!WaitNextEvent(everyEvent, &event, sleep_time, NULL))
 		{
 			// timed out without any GUI events
-			// let any other threads run before we wait for events again
+			// toggle our cursor if needed
+			check_cursor();
+
+			// then let any other threads run before we wait for events again
 			YieldToAnyThread();
 		}
+
+		// might need to toggle our cursor even if we got an event
+		check_cursor();
 
 		// handle any mac gui events
 		char c = 0;
