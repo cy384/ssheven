@@ -4,7 +4,7 @@ add_application(ssheven CREATOR "SSH7" ssheven.c ssheven-console.c ssheven.r)
 
 set_target_properties(ssheven PROPERTIES COMPILE_OPTIONS -ffunction-sections)
 
-add_compile_options(-O2)
+add_compile_options(-O2 -flto)
 
 IF(CMAKE_SYSTEM_NAME MATCHES Retro68)
 # for 68k
