@@ -177,11 +177,18 @@ void print_int(int d)
 
 	char buffer[12] = {0};
 	int i = 10;
+	int negative = 0;
 
 	if (d == 0)
 	{
 		buffer[0] = '0';
 		i = -1;
+	}
+
+	if (d < 0)
+	{
+		negative = 1;
+		d *= -1;
 	}
 
 	for (; d > 0; i--)
@@ -190,7 +197,9 @@ void print_int(int d)
 		d /= 10;
 	}
 
-	print_string(buffer+i+1);
+	if (negative) buffer[i] = '-';
+
+	print_string(buffer+i+1-negative);
 }
 
 void print_string(const char* c)
