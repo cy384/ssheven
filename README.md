@@ -10,36 +10,41 @@ Project status: as of 0.3.0 (see github releases), an actual SSH client with a z
 
 system requirements
 -------------------
-* CPU: 33 MHz 68040 (or 68LC040) might be fast enough to connect without timeouts (any PPC processor should be fine)
-* RAM: requires approx. 2MB
-* Disk space: currently about 1MB for the fat binary, or about 600KB for one platform
+* CPU: Any PPC processor.  Maybe a 33 or 40 MHz 68040 (or 68LC040).  68030 is too slow (for now).
+* RAM: 2MB
+* Disk space: 1MB for the fat binary
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
-* Open Transport networking required, version 1.1.1 recommended minimum
+* Open Transport networking required, version 1.1.1 or later recommended
 
 to do
 -----
-* terminal resizing
-* good console emulation (to be implemented with libvterm)
-* saving/loading connection settings
+* escape codes and related console emulation features (via libvterm)
+* refactor libssh2 usage to handle errors and centralize network ops
+* terminal window resizing
 * nicer connection dialog
+* password dialog that doesn't show the password
 * preferences
-* better error checking
+* saving/loading connection settings
 * key authentication
-* check server keys/known keys
-* copy/paste
-* figure out how to improve 68k performance (possibly impossible)
+* check server keys/known hosts/keys
+* text selection + copy
+* improve 68k performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
+* font size options
+* color/bold/underline/italic etc. fancy console features
 
 build
 -----
-More details to come as functionality is added.
-
 Uses Retro68 and cmake.
 
-Requires mbedtls and libssh2, see my (cy384's) ports of those libraries for details.  Note that you need to make/install them for both platforms if you want to build for both platforms.
+Requires mbedtls, libssh2, and libvterm, see my (cy384's) ports of those libraries for details.  Note that you need to build/install each for both platforms (m68k and PPC).
 
 * `mkdir build && cd build`
 * `cmake .. -DCMAKE_TOOLCHAIN_FILE=/your/path/to/Retro68-build/toolchain/powerpc-apple-macos/cmake/retroppc.toolchain.cmake` or `cmake .. -DCMAKE_TOOLCHAIN_FILE=/your/path/to/Retro68-build/toolchain/m68k-apple-macos/cmake/retro68.toolchain.cmake`
 * `make`
+
+Use Rez to build the fat binary: join the data fork from the PPC version and the resource fork from the m68k version.
+
+I have some build scripts that I'll clean up and publish with the 1.0.0 release.
 
 license
 -------
