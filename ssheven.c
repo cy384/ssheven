@@ -718,6 +718,7 @@ int main(int argc, char** argv)
 	EndUpdate(con.win);
 
 	if (!intro_dialog(hostname, username, password)) ok = 0;
+	if (!ok) printf_i("Cancelled, not connecting.\n");
 
 	if (ok)
 	{
