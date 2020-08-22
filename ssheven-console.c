@@ -110,6 +110,14 @@ int is_printable(char c)
 
 void print_char(char c)
 {
+	if (con.cursor_state == 1)
+	{
+		con.cursor_state = 0;
+		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
+		//InvertRect(&cursor);
+		InvalRect(&cursor);
+	}
+
 	// backspace
 	if ('\b' == c)
 	{
