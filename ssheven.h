@@ -28,6 +28,9 @@
 // ssheven constants
 #include "ssheven-constants.r"
 
+#include <vterm.h>
+#include <vterm_keycodes.h>
+
 // sinful globals
 struct ssheven_console
 {
@@ -43,6 +46,9 @@ struct ssheven_console
 
 	int cursor_state;
 	long int last_cursor_blink;
+
+	VTerm* vterm;
+	VTermScreen* vts;
 };
 
 extern struct ssheven_console con;

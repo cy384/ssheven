@@ -12,11 +12,11 @@
 #include "ssheven-debug.c"
 
 // error checking convenience macros
-#define OT_CHECK(X) err = (X); if (err != noErr) { printf_i("" #X " failed\n"); return 0; };
-#define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\n", libssh2_error_string(rc)); return 0;};
+#define OT_CHECK(X) err = (X); if (err != noErr) { printf_i("" #X " failed\r\n"); return 0; };
+#define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\r\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
-struct ssheven_console con = { NULL, {0}, 0, 0, 0, 0, 0, 0};
+struct ssheven_console con = { NULL, {0}, 0, 0, 0, 0, 0, 0, NULL};
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
@@ -57,17 +57,18 @@ static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult r
 // read from the channel and print to console
 void ssh_read(void)
 {
-	int rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
+	size_t rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
 
 	if (rc == 0) return;
 
-	if (rc > 0)
+	if (rc <= 0)
 	{
-		for(int i = 0; i < rc; ++i) print_char(ssh_con.recv_buffer[i]);
+		printf_i("channel read error: %s\r\n", libssh2_error_string(rc));
 	}
-	else
+
+	while (rc > 0)
 	{
-		printf_i("channel read error: %s\n", libssh2_error_string(rc));
+		rc -= vterm_input_write(con.vterm, ssh_con.recv_buffer, rc);
 	}
 }
 
@@ -119,16 +120,16 @@ int end_connection(void)
 				break;
 
 			default:
-				printf_i("unexpected OTLook result while closing: %s\n", OT_event_string(result));
+				printf_i("unexpected OTLook result while closing: %s\r\n", OT_event_string(result));
 				break;
 		}
 
 		// release endpoint
 		err = OTUnbind(ssh_con.endpoint);
-		if (err != noErr) printf_i("OTUnbind failed\n");
+		if (err != noErr) printf_i("OTUnbind failed\r\n");
 
 		err = OTCloseProvider(ssh_con.endpoint);
-		if (err != noErr) printf_i("OTCloseProvider failed\n");
+		if (err != noErr) printf_i("OTCloseProvider failed\r\n");
 	}
 
 	read_thread_state = DONE;
@@ -198,8 +199,8 @@ void ssh_write(char* buf, int len)
 		int r = libssh2_channel_write(ssh_con.channel, buf, len);
 		if (r < 1)
 		{
-			printf_i("failed to write to channel!\n");
-			printf_i("closing connection!\n");
+			printf_i("failed to write to channel!\r\n");
+			printf_i("closing connection!\r\n");
 			read_thread_command = EXIT;
 		}
 	}
@@ -383,7 +384,7 @@ int init_connection(char* hostname)
 
 	if (err != noErr || ssh_con.endpoint == kOTInvalidEndpointRef)
 	{
-		printf_i("failed to open OT TCP endpoint\n");
+		printf_i("failed to open OT TCP endpoint\r\n");
 		return 0;
 	}
 
@@ -396,7 +397,7 @@ int init_connection(char* hostname)
 
 	OT_CHECK(OTSetNonBlocking(ssh_con.endpoint));
 
-	printf_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\r\n"); YieldToAnyThread();
 
 	// set up address struct, do the DNS lookup, and connect
 	OTMemzero(&sndCall, sizeof(TCall));
@@ -407,28 +408,28 @@ int init_connection(char* hostname)
 	printf_i("connecting endpoint... "); YieldToAnyThread();
 	OT_CHECK(OTConnect(ssh_con.endpoint, &sndCall, nil));
 
-	printf_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\r\n"); YieldToAnyThread();
 
 	printf_i("initializing SSH... "); YieldToAnyThread();
 	// init libssh2
 	SSH_CHECK(libssh2_init(0));
 
-	printf_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\r\n"); YieldToAnyThread();
 
 	printf_i("opening SSH session... "); YieldToAnyThread();
 	ssh_con.session = libssh2_session_init();
 	if (ssh_con.session == 0)
 	{
-		printf_i("failed to initialize SSH library\n");
+		printf_i("failed to initialize SSH library\r\n");
 		return 0;
 	}
-	printf_i("done.\n"); YieldToAnyThread();
+	printf_i("done.\r\n"); YieldToAnyThread();
 
 	long s = TickCount();
 	printf_i("beginning SSH session handshake... "); YieldToAnyThread();
 	SSH_CHECK(libssh2_session_handshake(ssh_con.session, ssh_con.endpoint));
 
-	printf_i("done. (%d ticks)\n", TickCount() - s); YieldToAnyThread();
+	printf_i("done. (%d ticks)\r\n", TickCount() - s); YieldToAnyThread();
 
 	read_thread_state = OPEN;
 
@@ -532,7 +533,7 @@ void* read_thread(void* arg)
 	{
 		printf_i("authenticating... "); YieldToAnyThread();
 		ok = ssh_password_auth(username+1, password+1);
-		printf_i("done.\n"); YieldToAnyThread();
+		printf_i("done.\r\n"); YieldToAnyThread();
 	}
 
 	if (ok)
@@ -565,7 +566,7 @@ void* read_thread(void* arg)
 
 int safety_checks(void)
 {
-	OSStatus err;
+	OSStatus err = noErr;
 
 	// check for thread manager
 	long int thread_manager_gestalt = 0;
@@ -575,7 +576,7 @@ int safety_checks(void)
 	if (err != noErr || (thread_manager_gestalt & (1 << gestaltThreadMgrPresent)) == 0)
 	{
 		StopAlert(ALRT_TM, nil);
-		printf_i("Thread Manager not available!\n");
+		printf_i("Thread Manager not available!\r\n");
 		return 0;
 	}
 
@@ -591,7 +592,7 @@ int safety_checks(void)
 
 	if (err != noErr)
 	{
-		printf_i("Failed to check for Open Transport!\n");
+		printf_i("Failed to check for Open Transport!\r\n");
 		return 0;
 	}
 
@@ -599,13 +600,13 @@ int safety_checks(void)
 
 	if (err != noErr)
 	{
-		printf_i("Failed to check for Open Transport!\n");
+		printf_i("Failed to check for Open Transport!\r\n");
 		return 0;
 	}
 
 	if (open_transport_any_version == 0 && open_transport_new_version == 0)
 	{
-		printf_i("Open Transport required but not found!\n");
+		printf_i("Open Transport required but not found!\r\n");
 		StopAlert(ALRT_OT, nil);
 		return 0;
 	}
@@ -613,12 +614,12 @@ int safety_checks(void)
 	if (open_transport_any_version != 0 && open_transport_new_version == 0)
 	{
 		printf_i("Early version of Open Transport detected!");
-		printf_i("  Attempting to continue anyway.\n");
+		printf_i("  Attempting to continue anyway.\r\n");
 	}
 
 	NumVersion* ot_version = (NumVersion*) &open_transport_new_version;
 
-	printf_i("Detected Open Transport version: %d.%d.%d\n",
+	printf_i("Detected Open Transport version: %d.%d.%d\r\n",
 		(int)ot_version->majorRev,
 		(int)((ot_version->minorAndBugRev & 0xF0) >> 4),
 		(int)(ot_version->minorAndBugRev & 0x0F));
@@ -635,7 +636,7 @@ int safety_checks(void)
 		if (err != noErr || cpu_type == 0)
 		{
 			cpu_slow = 1;
-			printf_i("Failed to detect CPU type, continuing anyway.\n");
+			printf_i("Failed to detect CPU type, continuing anyway.\r\n");
 		}
 		else
 		{
@@ -702,15 +703,21 @@ int main(int argc, char** argv)
 
 	console_setup();
 
-	char* logo = "   _____ _____ _    _\n"
-		"  / ____/ ____| |  | |\n"
-		" | (___| (___ | |__| | _____   _____ _ __\n"
-		"  \\___ \\\\___ \\|  __  |/ _ \\ \\ / / _ \\ '_ \\\n"
-		"  ____) |___) | |  | |  __/\\ V /  __/ | | |\n"
-		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|\n";
+	char* logo = "   _____ _____ _    _\r\n"
+		"  / ____/ ____| |  | |\r\n"
+		" | (___| (___ | |__| | _____   _____ _ __\r\n"
+		"  \\___ \\\\___ \\|  __  |/ _ \\ \\ / / _ \\ '_ \\\r\n"
+		"  ____) |___) | |  | |  __/\\ V /  __/ | | |\r\n"
+		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|]\r\n";
 
 	printf_i(logo);
-	printf_i("by cy384, version " SSHEVEN_VERSION "\n");
+	printf_i("by cy384, version " SSHEVEN_VERSION "\r\n");
+
+	#if defined(__ppc__)
+	printf_i("Running in PPC mode.\r\n");
+	#else
+	printf_i("Running in 68k mode.\r\n");
+	#endif
 
 	BeginUpdate(con.win);
 	draw_screen(&(con.win->portRect));
@@ -725,13 +732,13 @@ int main(int argc, char** argv)
 	EndUpdate(con.win);
 
 	if (!intro_dialog(hostname, username, password)) ok = 0;
-	if (!ok) printf_i("Cancelled, not connecting.\n");
+	if (!ok) printf_i("Cancelled, not connecting.\r\n");
 
 	if (ok)
 	{
 		if (InitOpenTransport() != noErr)
 		{
-			printf_i("failed to initialize OT\n");
+			printf_i("failed to initialize OT\r\n");
 			ok = 0;
 		}
 	}
@@ -743,7 +750,7 @@ int main(int argc, char** argv)
 
 		if (ssh_con.recv_buffer == NULL || ssh_con.send_buffer == NULL)
 		{
-			printf_i("failed to allocate network buffers\n");
+			printf_i("failed to allocate network buffers\r\n");
 			ok = 0;
 		}
 	}
@@ -760,7 +767,7 @@ int main(int argc, char** argv)
 		if (err < 0)
 		{
 			ok = 0;
-			printf_i("failed to create network read thread\n");
+			printf_i("failed to create network read thread\r\n");
 		}
 	}
 
@@ -787,6 +794,8 @@ int main(int argc, char** argv)
 
 	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
 	if (ssh_con.send_buffer != NULL) OTFreeMem(ssh_con.send_buffer);
+
+	if (con.vterm != NULL) vterm_free(con.vterm);
 
 	if (ok)
 	{

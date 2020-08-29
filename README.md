@@ -4,13 +4,13 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.3.0 (see github releases), an actual SSH client with a zero-features "vanilla" fixed-size terminal
+Project status: as of 0.4.0 (see github releases), an actual SSH client with a fixed-size terminal, good enough to run `top`.
 
 ![ssheven screenshot](http://www.cy384.com/media/img/ssheven-screenshot.png)
 
 system requirements
 -------------------
-* CPU: Any PPC processor.  Maybe a 33 or 40 MHz 68040 (or 68LC040).  68030 is too slow (for now).
+* CPU: Any PPC processor, or a 33 MHz 68040 (maybe a 68LC040, maybe 25 MHz).
 * RAM: 2MB
 * Disk space: 1MB for the fat binary
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
@@ -18,7 +18,9 @@ system requirements
 
 to do
 -----
-* escape codes and related console emulation features (via libvterm)
+* hook in more libvterm callbacks (output, termprops)
+* feed keyboard input to libvterm (esp. for arrow keys)
+* bold/underline/italic in character drawing code
 * refactor libssh2 usage to handle errors and centralize network ops
 * terminal window resizing
 * nicer connection dialog
@@ -28,9 +30,9 @@ to do
 * key authentication
 * check server keys/known hosts/keys
 * text selection + copy
-* improve 68k performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
+* figure out retro68 mcpu issue, improve 68k performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
 * font size options
-* color/bold/underline/italic etc. fancy console features
+* color
 
 build
 -----

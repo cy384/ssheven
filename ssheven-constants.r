@@ -23,8 +23,8 @@
 #define SSHEVEN_BUFFER_SIZE 4096
 
 /* terminal type to send over ssh, determines features etc.
- * "vanilla" supports basically nothing, which is good for us here */
-#define SSHEVEN_TERMINAL_TYPE "vanilla"
+ * "vanilla" supports basically nothing, "vt100" as per the... vt100 */
+#define SSHEVEN_TERMINAL_TYPE "vt100"
 
 /* dialog for getting connection info */
 #define DLOG_CONNECT 128

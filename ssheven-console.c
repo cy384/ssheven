@@ -55,11 +55,15 @@ void draw_screen(Rect* r)
 	TextSize(9);
 	TextFace(normal);
 
+	VTermScreenCell vtsc;
+
 	for(int i = minRow; i < maxRow; i++)
 	{
 		for (int j = minCol; j < maxCol; j++)
 		{
-			draw_char(j, i, r, con.data[j][i]);
+			vterm_screen_get_cell(con.vts, (VTermPos){.row = i, .col = j}, &vtsc);
+			char c = (char)vtsc.chars[0];
+			draw_char(j, i, r, c);
 		}
 	}
 
@@ -88,87 +92,9 @@ void ruler(Rect* r)
 			draw_char(x, y, r, itoc[x%10]);
 }
 
-void bump_up_line()
-{
-	for (int y = 0; y < 23; y++)
-	{
-		for (int x = 0; x < 80; x++)
-		{
-			con.data[x][y] = con.data[x][y+1];
-		}
-	}
-
-	for (int x = 0; x < 80; x++) con.data[x][23] = ' ';
-
-	InvalRect(&(con.win->portRect));
-}
-
 int is_printable(char c)
 {
 	if (c >= 32 && c <= 126) return 1; else return 0;
-}
-
-void print_char(char c)
-{
-	if (con.cursor_state == 1)
-	{
-		con.cursor_state = 0;
-		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
-		//InvertRect(&cursor);
-		InvalRect(&cursor);
-	}
-
-	// backspace
-	if ('\b' == c)
-	{
-		// erase current location
-		con.data[con.cursor_x][con.cursor_y] = ' ';
-		Rect inval = cell_rect(con.cursor_x, con.cursor_y, (con.win->portRect));
-		InvalRect(&inval);
-
-		// wrap back to the previous line if possible and necessary
-		if (con.cursor_x == 0 && con.cursor_y != 0)
-		{
-			con.cursor_x = 79;
-			con.cursor_y--;
-		}
-		// otherwise just move back a spot
-		else if (con.cursor_x > 0)
-		{
-			con.cursor_x--;
-		}
-
-		return;
-	}
-
-	// got a bell, give em a system beep (value of 30 recommended by docs)
-	if ('\a' == c) SysBeep(30);
-
-	if ('\n' == c)
-	{
-		con.cursor_y++;
-		con.cursor_x = 0;
-	}
-
-	if (is_printable(c))
-	{
-		con.data[con.cursor_x][con.cursor_y] = c;
-		Rect inval = cell_rect(con.cursor_x, con.cursor_y, (con.win->portRect));
-		InvalRect(&inval);
-		con.cursor_x++;
-	}
-
-	if (con.cursor_x == 80)
-	{
-		con.cursor_x = 0;
-		con.cursor_y++;
-	}
-
-	if (con.cursor_y == 24)
-	{
-		bump_up_line();
-		con.cursor_y = 23;
-	}
 }
 
 void print_int(int d)
@@ -204,10 +130,7 @@ void print_int(int d)
 
 void print_string(const char* c)
 {
-	while (*c != '\0')
-	{
-		print_char(*c++);
-	}
+	vterm_input_write(con.vterm, c, strlen(c));
 }
 
 void printf_i(const char* str, ...)
@@ -227,16 +150,19 @@ void printf_i(const char* str, ...)
 					break;
 				case 's':
 					print_string(va_arg(args, char*));
+					break;
+				case '\0':
+					vterm_input_write(con.vterm, str-1, 1);
+					break;
 				default:
 					va_arg(args, int); // ignore
-					print_char('%');
-					print_char(*str);
+					vterm_input_write(con.vterm, str-1, 2);
 					break;
 			}
 		}
 		else
 		{
-			print_char(*str);
+			vterm_input_write(con.vterm, str, 1);
 		}
 
 		str++;
@@ -254,6 +180,58 @@ void set_window_title(WindowPtr w, const char* c_name)
 	SetWTitle(w, pascal_name);
 }
 
+int bell(void* user)
+{
+	SysBeep(30);
+
+	return 1;
+}
+
+int movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user)
+{
+	// if the cursor is dark, invalidate that location
+	if (con.cursor_state == 1)
+	{
+		Rect inval = cell_rect(con.cursor_x, con.cursor_y, (con.win->portRect));
+		InvalRect(&inval);
+	}
+
+	con.cursor_x = pos.col;
+	con.cursor_y = pos.row;
+
+	return 1;
+}
+
+Rect cell_rect(int x, int y, Rect bounds)
+{
+	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
+		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
+
+	return r;
+}
+
+int damage(VTermRect rect, void *user)
+{
+	Rect topleft = cell_rect(rect.start_col, rect.start_row, (con.win->portRect));
+	Rect bottomright = cell_rect(rect.end_col, rect.end_row, (con.win->portRect));
+
+	UnionRect(&topleft, &bottomright, &topleft);
+	InvalRect(&topleft);
+
+	return 1;
+}
+
+const VTermScreenCallbacks vtscrcb =
+{
+	.damage = damage,
+	.moverect = NULL,
+	.movecursor = movecursor,
+	.settermprop = NULL,
+	.bell = bell,
+	.resize = NULL,
+	.sb_pushline = NULL,
+	.sb_popline = NULL
+};
 
 void console_setup(void)
 {
@@ -303,12 +281,14 @@ void console_setup(void)
 
 	con.cursor_x = 0;
 	con.cursor_y = 0;
+
+	con.vterm = vterm_new(24, 80);
+	vterm_set_utf8(con.vterm, 0);
+	VTermState* vtermstate = vterm_obtain_state(con.vterm);
+	vterm_state_reset(vtermstate, 1);
+
+	con.vts = vterm_obtain_screen(con.vterm);
+	vterm_screen_reset(con.vts, 1);
+	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
 }
 
-Rect cell_rect(int x, int y, Rect bounds)
-{
-	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
-		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
-
-	return r;
-}
