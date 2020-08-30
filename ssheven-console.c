@@ -8,7 +8,7 @@
 #include "ssheven-console.h"
 
 
-void draw_char(int x, int y, Rect* r, char c)
+inline void draw_char(int x, int y, Rect* r, char c)
 {
 	MoveTo(r->left + x * con.cell_width + 2, r->top + ((y+1) * con.cell_height) - 2);
 	DrawChar(c);
@@ -56,14 +56,23 @@ void draw_screen(Rect* r)
 	TextFace(normal);
 
 	VTermScreenCell vtsc;
+	short face = normal;
+	char c;
 
 	for(int i = minRow; i < maxRow; i++)
 	{
 		for (int j = minCol; j < maxCol; j++)
 		{
 			vterm_screen_get_cell(con.vts, (VTermPos){.row = i, .col = j}, &vtsc);
-			char c = (char)vtsc.chars[0];
+			c = (char)vtsc.chars[0];
+			face = normal;
+			if (vtsc.attrs.bold) face |= (condense|bold);
+			if (vtsc.attrs.italic) face |= (condense|italic);
+			if (vtsc.attrs.underline) face |= underline;
+
+			if (face != normal) TextFace(face);
 			draw_char(j, i, r, c);
+			if (face != normal) TextFace(normal);
 		}
 	}
 
