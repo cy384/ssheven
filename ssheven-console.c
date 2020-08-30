@@ -58,6 +58,7 @@ void draw_screen(Rect* r)
 	VTermScreenCell vtsc;
 	short face = normal;
 	char c;
+	Rect cr;
 
 	for(int i = minRow; i < maxRow; i++)
 	{
@@ -73,6 +74,12 @@ void draw_screen(Rect* r)
 			if (face != normal) TextFace(face);
 			draw_char(j, i, r, c);
 			if (face != normal) TextFace(normal);
+
+			if (vtsc.attrs.reverse)
+			{
+				cr = cell_rect(j,i,con.win->portRect);
+				InvertRect(&cr);
+			}
 		}
 	}
 
