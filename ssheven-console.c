@@ -237,12 +237,34 @@ int damage(VTermRect rect, void *user)
 	return 1;
 }
 
+int settermprop(VTermProp prop, VTermValue *val, void *user)
+{
+	switch (prop)
+	{
+		case VTERM_PROP_TITLE: // string
+			set_window_title(con.win, val->string);
+			return 1;
+		// TODO: handle more of these, particularly cursor visible and blink
+		case VTERM_PROP_ICONNAME: // string
+		case VTERM_PROP_REVERSE: //bool
+		case VTERM_PROP_CURSORSHAPE: // number
+		case VTERM_PROP_MOUSE: // number
+		case VTERM_PROP_CURSORVISIBLE: // bool
+		case VTERM_PROP_CURSORBLINK: // bool
+		case VTERM_PROP_ALTSCREEN: // bool
+		default:
+			break;
+	}
+
+	return 0;
+}
+
 const VTermScreenCallbacks vtscrcb =
 {
 	.damage = damage,
 	.moverect = NULL,
 	.movecursor = movecursor,
-	.settermprop = NULL,
+	.settermprop = settermprop,
 	.bell = bell,
 	.resize = NULL,
 	.sb_pushline = NULL,
