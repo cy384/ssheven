@@ -259,6 +259,11 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 	return 0;
 }
 
+void output_callback(const char *s, size_t len, void *user)
+{
+	ssh_write((char*)s, len);
+}
+
 const VTermScreenCallbacks vtscrcb =
 {
 	.damage = damage,
@@ -328,5 +333,7 @@ void console_setup(void)
 	con.vts = vterm_obtain_screen(con.vterm);
 	vterm_screen_reset(con.vts, 1);
 	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
+
+	vterm_output_set_callback(con.vterm, output_callback, NULL);
 }
 

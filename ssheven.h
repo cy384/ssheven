@@ -65,3 +65,5 @@ struct ssheven_ssh_connection
 };
 
 extern struct ssheven_ssh_connection ssh_con;
+
+void ssh_write(char* buf, size_t len);

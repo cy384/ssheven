@@ -192,7 +192,7 @@ void display_about_box(void)
 	DisposeWindow(about);
 }
 
-void ssh_write(char* buf, int len)
+void ssh_write(char* buf, size_t len)
 {
 	if (read_thread_state == OPEN && read_thread_command != EXIT)
 	{
