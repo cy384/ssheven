@@ -39,10 +39,10 @@ void draw_screen(Rect* r)
 	SectRect(r, &bounds, r);
 
 	short minRow = (0 > (r->top - bounds.top) / con.cell_height) ? 0 : (r->top - bounds.top) / con.cell_height;
-	short maxRow = (24 < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? 24 : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
+	short maxRow = (con.size_y < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? con.size_y : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
 
 	short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
-	short maxCol = (80 < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? 80 : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
+	short maxCol = (con.size_x < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? con.size_x : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
 
 	EraseRect(r);
 
@@ -103,8 +103,8 @@ void ruler(Rect* r)
 {
 	char itoc[] = {'0','1','2','3','4','5','6','7','8','9'};
 
-	for (int x = 0; x < 80; x++)
-		for (int y = 0; y < 24; y++)
+	for (int x = 0; x < con.size_x; x++)
+		for (int y = 0; y < con.size_y; y++)
 			draw_char(x, y, r, itoc[x%10]);
 }
 
@@ -283,6 +283,9 @@ void console_setup(void)
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
 
+	con.size_x = 80;
+	con.size_y = 24;
+
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
@@ -298,19 +301,12 @@ void console_setup(void)
 	InsetRect(&initial_window_bounds, 20, 20);
 	initial_window_bounds.top += 40;
 
-	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * 24 + 2;
-	initial_window_bounds.right = initial_window_bounds.left + con.cell_width * 80 + 4;
-
-	// limits on window size changes:
-	// top = min vertical
-	// bottom = max vertical
-	// left = min horizontal
-	// right = max horizontal
-	//Rect window_limits = { .top = 100, .bottom = 200, .left = 100, .right = 200 };
+	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * con.size_y + 2;
+	initial_window_bounds.right = initial_window_bounds.left + con.cell_width * con.size_x + 4;
 
 	ConstStr255Param title = "\pssheven " SSHEVEN_VERSION;
 
-	WindowPtr win = NewWindow(NULL, &initial_window_bounds, title, true, noGrowDocProc, (WindowPtr)-1, true, 0);
+	WindowPtr win = NewWindow(NULL, &initial_window_bounds, title, true, documentProc, (WindowPtr)-1, true, 0);
 
 	Rect portRect = win->portRect;
 
@@ -320,20 +316,19 @@ void console_setup(void)
 	int exit_main_loop = 0;
 
 	con.win = win;
-	memset(con.data, ' ', sizeof(char) * 24*80);
 
 	con.cursor_x = 0;
 	con.cursor_y = 0;
 
-	con.vterm = vterm_new(24, 80);
+	con.vterm = vterm_new(con.size_y, con.size_x);
 	vterm_set_utf8(con.vterm, 0);
 	VTermState* vtermstate = vterm_obtain_state(con.vterm);
 	vterm_state_reset(vtermstate, 1);
 
+	vterm_output_set_callback(con.vterm, output_callback, NULL);
+
 	con.vts = vterm_obtain_screen(con.vterm);
 	vterm_screen_reset(con.vts, 1);
 	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
-
-	vterm_output_set_callback(con.vterm, output_callback, NULL);
 }
 

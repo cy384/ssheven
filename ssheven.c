@@ -16,7 +16,7 @@
 #define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\r\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
-struct ssheven_console con = { NULL, {0}, 0, 0, 0, 0, 0, 0, NULL};
+struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
@@ -259,6 +259,37 @@ int process_menu_select(int32_t result)
 	return exit;
 }
 
+void resize_con_window(WindowPtr eventWin, EventRecord event)
+{
+	// TODO: put this somewhere else
+	// limits on window size
+	// top = min vertical
+	// bottom = max vertical
+	// left = min horizontal
+	// right = max horizontal
+	Rect window_limits = { .top = con.cell_height*2 + 2, .bottom = con.cell_height*100 + 2, .left = con.cell_width*10 + 4, .right = con.cell_width*200 + 4 };
+
+	long growResult = GrowWindow(eventWin, event.where, &window_limits);
+	if (growResult != 0)
+	{
+		int height = growResult >> 16;
+		int width = growResult & 0xFFFF;
+
+		// 'snap' to a size that won't have extra pixels not in a cell
+		int next_height = height - ((height - 2) % con.cell_height);
+		int next_width = width - ((width - 4) % con.cell_width);
+
+		SizeWindow(eventWin, next_width, next_height, true);
+		// don't need to erase and invalidate, since vterm callbacks on resize
+
+		con.size_x = (next_width - 4)/con.cell_width;
+		con.size_y = (next_height - 2)/con.cell_height;
+
+		vterm_set_size(con.vterm, con.size_y, con.size_x);
+		libssh2_channel_request_pty_size(ssh_con.channel, con.size_x, con.size_y);
+	}
+}
+
 void event_loop(void)
 {
 	int exit_event_loop = 0;
@@ -350,14 +381,7 @@ void event_loop(void)
 						break;
 
 					case inGrow:
-						{
-							//not allowing resize right now
-							break;
-							/*long growResult = GrowWindow(eventWin, event.where, &window_limits);
-							SizeWindow(eventWin, growResult & 0xFFFF, growResult >> 16, true);
-							EraseRect(&(eventWin->portRect));
-							InvalRect(&(eventWin->portRect));*/
-						}
+						resize_con_window(eventWin, event);
 						break;
 
 					case inGoAway:
@@ -468,7 +492,7 @@ int ssh_setup_terminal(void)
 {
 	int rc = 0;
 
-	SSH_CHECK(libssh2_channel_request_pty(ssh_con.channel, SSHEVEN_TERMINAL_TYPE));
+	SSH_CHECK(libssh2_channel_request_pty_ex(ssh_con.channel, SSHEVEN_TERMINAL_TYPE, (strlen(SSHEVEN_TERMINAL_TYPE)), NULL, 0, con.size_x, con.size_y, 0, 0));
 	SSH_CHECK(libssh2_channel_shell(ssh_con.channel));
 
 	return 1;
@@ -796,14 +820,12 @@ int main(int argc, char** argv)
 
 	// tell the read thread to quit, then let it run to actually do so
 	read_thread_command = EXIT;
-	YieldToAnyThread();
+	while (read_thread_state != DONE) YieldToAnyThread();
 
 	//OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
 	//YieldToThread(read_thread_id);
 	//	err = DisposeThread(read_thread_id, (void*)&read_thread_result, 0);
 	//err = DisposeThread(read_thread_id, NULL, 0);
-
-	if (ok) end_connection();
 
 	BeginUpdate(con.win);
 	draw_screen(&(con.win->portRect));

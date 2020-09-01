@@ -18,20 +18,19 @@ system requirements
 
 to do
 -----
-* hook in more libvterm callbacks (output, termprops)
-* feed keyboard input to libvterm (esp. for arrow keys)
-* bold/underline/italic in character drawing code
 * refactor libssh2 usage to handle errors and centralize network ops
-* terminal window resizing
 * nicer connection dialog
 * password dialog that doesn't show the password
 * preferences
 * saving/loading connection settings
 * key authentication
 * check server keys/known hosts/keys
-* text selection + copy
-* figure out retro68 mcpu issue, improve 68k performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
+* improve draw speed
+* figure out retro68 mcpu issue, improve 68k connection performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
 * font size options
+* hook in more libvterm callbacks
+* feed more keyboard input to libvterm
+* text selection + copy
 * color
 
 build

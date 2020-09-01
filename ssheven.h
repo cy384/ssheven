@@ -36,7 +36,8 @@ struct ssheven_console
 {
 	WindowPtr win;
 
-	char data[80][24];
+	int size_x;
+	int size_y;
 
 	int cursor_x;
 	int cursor_y;
