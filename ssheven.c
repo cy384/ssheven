@@ -270,6 +270,7 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 	Rect window_limits = { .top = con.cell_height*2 + 2, .bottom = con.cell_height*100 + 2, .left = con.cell_width*10 + 4, .right = con.cell_width*200 + 4 };
 
 	long growResult = GrowWindow(eventWin, event.where, &window_limits);
+
 	if (growResult != 0)
 	{
 		int height = growResult >> 16;
@@ -280,7 +281,8 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 		int next_width = width - ((width - 4) % con.cell_width);
 
 		SizeWindow(eventWin, next_width, next_height, true);
-		// don't need to erase and invalidate, since vterm callbacks on resize
+		EraseRect(&(con.win->portRect));
+		InvalRect(&(con.win->portRect));
 
 		con.size_x = (next_width - 4)/con.cell_width;
 		con.size_y = (next_height - 2)/con.cell_height;

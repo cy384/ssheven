@@ -97,6 +97,19 @@ void draw_screen(Rect* r)
 	TextFont(save_font);
 	TextSize(save_font_size);
 	TextFace(save_font_face);
+
+	// draw the grow icon in the bottom right corner, but not the scroll bars
+	// yes, this is really awkward
+	MacRegion bottom_right_corner = { 10, con.win->portRect};
+	MacRegion* brc = &bottom_right_corner;
+	MacRegion** old = con.win->clipRgn;
+
+	bottom_right_corner.rgnBBox.top = bottom_right_corner.rgnBBox.bottom - 15;
+	bottom_right_corner.rgnBBox.left = bottom_right_corner.rgnBBox.right - 15;
+
+	con.win->clipRgn = &brc;
+	DrawGrowIcon(con.win);
+	con.win->clipRgn = old;
 }
 
 void ruler(Rect* r)
