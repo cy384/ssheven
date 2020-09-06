@@ -20,7 +20,7 @@ struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
-enum { UNITIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNITIALIZED;
+enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
 
 char hostname[256] = {0};
 char username[256] = {0};
@@ -915,20 +915,25 @@ int main(int argc, char** argv)
 	if (ok) read_thread_command = READ;
 
 	// procede into our main event loop
-	event_loop();
+	if (ok) event_loop();
 
 	// tell the read thread to quit, then let it run to actually do so
 	read_thread_command = EXIT;
-	while (read_thread_state != DONE) YieldToAnyThread();
+	if (read_thread_state != UNINTIALIZED)
+		while (read_thread_state != DONE)
+			YieldToAnyThread();
 
 	//OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
 	//YieldToThread(read_thread_id);
 	//	err = DisposeThread(read_thread_id, (void*)&read_thread_result, 0);
 	//err = DisposeThread(read_thread_id, NULL, 0);
 
-	BeginUpdate(con.win);
-	draw_screen(&(con.win->portRect));
-	EndUpdate(con.win);
+	if (ok)
+	{
+		BeginUpdate(con.win);
+		draw_screen(&(con.win->portRect));
+		EndUpdate(con.win);
+	}
 
 	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
 	if (ssh_con.send_buffer != NULL) OTFreeMem(ssh_con.send_buffer);
