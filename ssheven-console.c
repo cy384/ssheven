@@ -7,6 +7,44 @@
 
 #include "ssheven-console.h"
 
+char key_to_vterm[256] = { VTERM_KEY_NONE };
+
+void setup_key_translation(void)
+{
+	// TODO: figure out how to translate the rest of these
+	key_to_vterm[kEnterCharCode] = VTERM_KEY_ENTER;
+	key_to_vterm[kTabCharCode] = VTERM_KEY_TAB;
+	key_to_vterm[kBackspaceCharCode] = VTERM_KEY_BACKSPACE;
+	key_to_vterm[kEscapeCharCode] = VTERM_KEY_ESCAPE;
+	key_to_vterm[kUpArrowCharCode] = VTERM_KEY_UP;
+	key_to_vterm[kDownArrowCharCode] = VTERM_KEY_DOWN;
+	key_to_vterm[kLeftArrowCharCode] = VTERM_KEY_LEFT;
+	key_to_vterm[kRightArrowCharCode] = VTERM_KEY_RIGHT;
+	//key_to_vterm[0] = VTERM_KEY_INS;
+	key_to_vterm[kDeleteCharCode] = VTERM_KEY_DEL;
+	key_to_vterm[kHomeCharCode] = VTERM_KEY_HOME;
+	key_to_vterm[kEndCharCode] = VTERM_KEY_END;
+	key_to_vterm[kPageUpCharCode] = VTERM_KEY_PAGEUP;
+	key_to_vterm[kPageDownCharCode] = VTERM_KEY_PAGEDOWN;
+	//key_to_vterm[0] = VTERM_KEY_KP_0;
+	//key_to_vterm[0] = VTERM_KEY_KP_1;
+	//key_to_vterm[0] = VTERM_KEY_KP_2;
+	//key_to_vterm[0] = VTERM_KEY_KP_3;
+	//key_to_vterm[0] = VTERM_KEY_KP_4;
+	//key_to_vterm[0] = VTERM_KEY_KP_5;
+	//key_to_vterm[0] = VTERM_KEY_KP_6;
+	//key_to_vterm[0] = VTERM_KEY_KP_7;
+	//key_to_vterm[0] = VTERM_KEY_KP_8;
+	//key_to_vterm[0] = VTERM_KEY_KP_9;
+	//key_to_vterm[0] = VTERM_KEY_KP_MULT;
+	//key_to_vterm[0] = VTERM_KEY_KP_PLUS;
+	//key_to_vterm[0] = VTERM_KEY_KP_COMMA;
+	//key_to_vterm[0] = VTERM_KEY_KP_MINUS;
+	//key_to_vterm[0] = VTERM_KEY_KP_PERIOD;
+	//key_to_vterm[0] = VTERM_KEY_KP_DIVIDE;
+	//key_to_vterm[0] = VTERM_KEY_KP_ENTER;
+	//key_to_vterm[0] = VTERM_KEY_KP_EQUAL;
+}
 
 inline void draw_char(int x, int y, Rect* r, char c)
 {
@@ -343,5 +381,7 @@ void console_setup(void)
 	con.vts = vterm_obtain_screen(con.vterm);
 	vterm_screen_reset(con.vts, 1);
 	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
+
+	setup_key_translation();
 }
 

@@ -70,4 +70,6 @@ struct ssheven_ssh_connection
 
 extern struct ssheven_ssh_connection ssh_con;
 
+extern char key_to_vterm[256];
+
 void ssh_write(char* buf, size_t len);

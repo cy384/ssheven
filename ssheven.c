@@ -350,27 +350,18 @@ void event_loop(void)
 				}
 				else if (c)
 				{
-					switch(c)
+					if (key_to_vterm[c] != VTERM_KEY_NONE)
 					{
-						case kLeftArrowCharCode:
-							vterm_keyboard_key(con.vterm, VTERM_KEY_LEFT, VTERM_MOD_NONE);
-							break;
-						case kRightArrowCharCode:
-							vterm_keyboard_key(con.vterm, VTERM_KEY_RIGHT, VTERM_MOD_NONE);
-							break;
-						case kUpArrowCharCode:
-							vterm_keyboard_key(con.vterm, VTERM_KEY_UP, VTERM_MOD_NONE);
-							break;
-						case kDownArrowCharCode:
-							vterm_keyboard_key(con.vterm, VTERM_KEY_DOWN, VTERM_MOD_NONE);
-							break;
-						default:
-							if ('\r' == c) c = '\n';
-							ssh_con.send_buffer[0] = c;
-							ssh_write(ssh_con.send_buffer, 1);
-							break;
+						vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
+					}
+					else
+					{
+						if ('\r' == c) c = '\n';
+						ssh_con.send_buffer[0] = c;
+						ssh_write(ssh_con.send_buffer, 1);
 					}
 				}
+				break;
 
 			case mouseDown:
 				switch(FindWindow(event.where, &eventWin))
