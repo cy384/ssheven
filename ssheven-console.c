@@ -93,27 +93,32 @@ void draw_screen(Rect* r)
 	TextSize(9);
 	TextFace(normal);
 
-	VTermScreenCell vtsc;
 	short face = normal;
 	char c;
 	Rect cr;
+
+	ScreenCell* vtsc = NULL;
+	VTermPos pos = {.row = 0, .col = 0};
 
 	for(int i = minRow; i < maxRow; i++)
 	{
 		for (int j = minCol; j < maxCol; j++)
 		{
-			vterm_screen_get_cell(con.vts, (VTermPos){.row = i, .col = j}, &vtsc);
-			c = (char)vtsc.chars[0];
+			pos.row = i;
+			pos.col = j;
+			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+			c = (char)vtsc->chars[0];
+
 			face = normal;
-			if (vtsc.attrs.bold) face |= (condense|bold);
-			if (vtsc.attrs.italic) face |= (condense|italic);
-			if (vtsc.attrs.underline) face |= underline;
+			if (vtsc->pen.bold) face |= (condense|bold);
+			if (vtsc->pen.italic) face |= (condense|italic);
+			if (vtsc->pen.underline) face |= underline;
 
 			if (face != normal) TextFace(face);
 			draw_char(j, i, r, c);
 			if (face != normal) TextFace(normal);
 
-			if (vtsc.attrs.reverse)
+			if (vtsc->pen.reverse)
 			{
 				cr = cell_rect(j,i,con.win->portRect);
 				InvertRect(&cr);
