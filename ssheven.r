@@ -30,19 +30,19 @@ resource 'DITL' (DITL_ABOUT, purgeable) {
 };
 
 resource 'DLOG' (DLOG_CONNECT) {
-	{ 50, 100, 240, 420 },
+	{ 50, 100, 195, 420 },
 	dBoxProc,
 	visible,
 	noGoAway,
 	0,
-	128,
+	DLOG_CONNECT,
 	"",
 	centerMainScreen
 };
 
 resource 'DITL' (DITL_CONNECT) {
 	{
-		{ 190-10-20, 320-10-80, 190-10, 320-10 },
+		{ 115, 320-10-80, 135, 320-10 },
 		Button { enabled, "Connect" };
 
 		{ 190-10-20-5, 320-10-80-5, 190-10+5, 320-10+5 },
@@ -51,22 +51,16 @@ resource 'DITL' (DITL_CONNECT) {
 		{ 10, 10, 30, 310 },
 		StaticText { enabled, "Address with port" };
 
-		{ 35, 10, 51, 310 },
+		{ 35, 15, 51, 305 },
 		EditText { enabled, "10.0.2.2:22" };
 
 		{ 60, 10, 80, 310 },
 		StaticText { enabled, "Username" };
 
-		{ 85, 10, 101, 310 },
+		{ 85, 15, 101, 305 },
 		EditText { enabled, "" };
 
-		{ 110, 10, 130, 310 },
-		StaticText { enabled, "Password" };
-
-		{ 135, 10, 151, 310 },
-		EditText { enabled, "" };
-
-		{ 190-10-20, 10, 190-10, 90 },
+		{ 115, 10, 135, 90 },
 		Button { enabled, "Cancel" };
 	}
 };
@@ -165,6 +159,39 @@ resource 'ALRT' (ALRT_CPU_BAD, purgeable) {
 		OK, visible, silent
 	},
 	alertPositionMainScreen
+};
+
+resource 'DLOG' (DLOG_PASSWORD) {
+	{ 50, 100, 150, 420 },
+	dBoxProc,
+	visible,
+	noGoAway,
+	0,
+	DLOG_PASSWORD,
+	"",
+	centerMainScreen
+};
+
+resource 'DITL' (DITL_PASSWORD) {
+	{
+		{ 70, 320-10-80, 90, 320-10 },
+		Button { enabled, "OK" };
+
+		{ 190-10-20-5, 320-10-80-5, 190-10+5, 320-10+5 },
+		UserItem { enabled };
+
+		{ 10, 10, 30, 310 },
+		StaticText { enabled, "Enter password:" };
+
+		{ 35, 15, 51, 305 },
+		EditText { enabled, "" };
+
+		{ 240, 10, 240, 10 },
+		EditText { enabled, "" };
+
+		{ 70, 10, 90, 90 },
+		Button { enabled, "Cancel" };
+	}
 };
 
 #include "Processes.r"

@@ -51,6 +51,10 @@
 #define DITL_ABOUT 133
 #define PICT_ABOUT 133
 
+/* password entry window */
+#define DLOG_PASSWORD 134
+#define DITL_PASSWORD 134
+
 /* menus */
 #define MBAR_SSHEVEN 128
 #define MENU_APPLE   128

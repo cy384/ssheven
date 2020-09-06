@@ -500,9 +500,109 @@ int ssh_setup_terminal(void)
 	return 1;
 }
 
+// from the ATS password sample code
+pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
+{
+	DialogPtr evtDlog;
+	short selStart, selEnd;
+	long ticks;
+	Handle itemH;
+	DialogItemType type;
+	Rect box;
+
+	// TODO: this should be declared somewhere? include it?
+	int kVisualDelay = 8;
+
+	if (event->what == keyDown || event->what == autoKey)
+	{
+		char c = event->message & charCodeMask;
+		switch (c)
+		{
+			case kEnterCharCode: // select the ok button
+			case kReturnCharCode: // we have to manually blink it...
+			case kLineFeedCharCode:
+				GetDialogItem(dlog, 1, &type, &itemH, &box);
+				HiliteControl((ControlHandle)(itemH), kControlButtonPart);
+				Delay(kVisualDelay, &ticks);
+				HiliteControl((ControlHandle)(itemH), 1);
+				*itemHit = 1;
+				return true;
+
+			case kTabCharCode: // cancel out tab events
+				event->what = nullEvent;
+				return false;
+
+			case kEscapeCharCode: // hit cancel on esc or cmd-period
+			case '.':
+				if ((event->modifiers & cmdKey) || c == kEscapeCharCode)
+				{
+					GetDialogItem(dlog, 6, &type, &itemH, &box);
+					HiliteControl((ControlHandle)(itemH), kControlButtonPart);
+					Delay(kVisualDelay, &ticks);
+					HiliteControl((ControlHandle)(itemH), 6);
+					*itemHit = 6;
+					return true;
+				}
+
+			case kLeftArrowCharCode:
+			case kRightArrowCharCode:
+			case kUpArrowCharCode:
+			case kDownArrowCharCode:
+			case kHomeCharCode:
+			case kEndCharCode:
+				return false; // don't handle them
+
+			default: // TODO: this is dumb and assumes everything else is a valid text character
+				selStart = (**((DialogPeek)dlog)->textH).selStart; // Get the selection in the visible item
+				selEnd = (**((DialogPeek)dlog)->textH).selEnd;
+				SelectDialogItemText(dlog, 5, selStart, selEnd); // Select text in invisible item
+				DialogSelect(event, &evtDlog, itemHit); // Input key
+				SelectDialogItemText(dlog, 4, selStart, selEnd); // Select same area in visible item
+				if ((event->message & charCodeMask) != kBackspaceCharCode) // If it's not a backspace (backspace is the only key that can affect both the text and the selection- thus we need to process it in both fields, but not change it for the hidden field.
+					event->message = 0xa5; // Replace with character to use (the bullet)
+				DialogSelect(event, &evtDlog, itemHit); // Put in fake character
+				return true;
+		}
+	}
+
+	return false; // pass on other (non-keypress) events
+}
+
+// from the ATS password sample code
+// 1 for ok, 0 for cancel
+int password_dialog(void)
+{
+	// n.b. dialog strings can't be longer than this, so no overflow risk
+	//static char password[256];
+	DialogPtr dlog;
+	Handle itemH;
+	short item;
+	Rect box;
+	DialogItemType type;
+
+	dlog = GetNewDialog(DLOG_PASSWORD, 0, (WindowPtr) - 1);
+
+	// draw default button indicator around the connect button
+	GetDialogItem(dlog, 2, &type, &itemH, &box);
+	SetDialogItem(dlog, 2, type, (Handle)NewUserItemUPP(&ButtonFrameProc), &box);
+
+	do {
+		ModalDialog(NewModalFilterUPP(TwoItemFilter), &item);
+	} while (item != 1 && item != 6); // until OK or cancel
+
+	if (6 == item) return 0;
+
+	// read out of the hidden text box
+	GetDialogItem(dlog, 5, &type, &itemH, &box);
+	GetDialogItemText(itemH, password);
+
+	DisposeDialog(dlog);
+
+	return 1;
+}
+
 int intro_dialog(char* hostname, char* username, char* password)
 {
-
 	// modal dialog setup
 	TEInit();
 	InitDialogs(NULL);
@@ -529,28 +629,25 @@ int intro_dialog(char* hostname, char* username, char* password)
 	GetDialogItem(dlg, 6, &type, &itemH, &box);
 	username_text_box = (ControlHandle)itemH;
 
-	ControlHandle password_text_box;
-	GetDialogItem(dlg, 8, &type, &itemH, &box);
-	password_text_box = (ControlHandle)itemH;
-
 	// let the modalmanager do everything
 	// stop when the connect button is hit
 	short item;
 	do {
 		ModalDialog(NULL, &item);
-	} while(item != 1 && item != 9);
+	} while(item != 1 && item != 7);
 
 	// copy the text out of the boxes
 	GetDialogItemText((Handle)address_text_box, hostname);
 	GetDialogItemText((Handle)username_text_box, username);
-	GetDialogItemText((Handle)password_text_box, password);
 
 	// clean it up
-	CloseDialog(dlg);
+	DisposeDialog(dlg);
 	FlushEvents(everyEvent, -1);
 
 	// if we hit cancel, 0
-	if (item == 9) return 0; else return 1;
+	if (item == 7) return 0;
+
+	return password_dialog();
 }
 
 //enum { WAIT, READ, EXIT } read_thread_command = WAIT;

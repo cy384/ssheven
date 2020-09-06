@@ -21,6 +21,8 @@
 #include <Gestalt.h>
 #include <Devices.h>
 #include <Scrap.h>
+#include <Controls.h>
+#include <ControlDefinitions.h>
 
 // libssh2
 #include <libssh2.h>
@@ -28,6 +30,7 @@
 // ssheven constants
 #include "ssheven-constants.r"
 
+// libvterm
 #include <vterm.h>
 #include <vterm_keycodes.h>
 
