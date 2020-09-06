@@ -4,9 +4,9 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.4.0 (see github releases), an actual SSH client with a fixed-size terminal, good enough to run `top`.
+Project status: as of 0.5.0 (see github releases), a functional SSH client with decent terminal emulation, able to run programs like `htop` and `nano`.  See "to do" section below for upcoming work.
 
-![ssheven screenshot](http://www.cy384.com/media/img/ssheven-screenshot.png)
+![ssheven screenshot](http://www.cy384.com/media/img/ssheven-0.5.0-screenshot.png)
 
 system requirements
 -------------------
@@ -19,17 +19,16 @@ system requirements
 to do
 -----
 * refactor libssh2 usage to handle errors and centralize network ops
-* nicer connection dialog
-* password dialog that doesn't show the password
+* key authentication, and radio buttons on connection dialog for password vs key
 * preferences
 * saving/loading connection settings
-* key authentication
 * check server keys/known hosts/keys
-* improve draw speed
+* nicer error presentation for issues like wrong password or bad connection (not connected to network, no dns, etc.)
+* read Apple HIG and obsessively optimize placement of all GUI elements
+* improve draw speed (big refactor, need to use an "offscreen graphics world" framebuffer, also hook scrolling into vterm)
 * figure out retro68 mcpu issue, improve 68k connection performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
 * font size options
 * hook in more libvterm callbacks
-* feed more keyboard input to libvterm
 * text selection + copy
 * color
 
@@ -46,6 +45,8 @@ Requires mbedtls, libssh2, and libvterm, see my (cy384's) ports of those librari
 Use Rez to build the fat binary: join the data fork from the PPC version and the resource fork from the m68k version.
 
 I have some build scripts that I'll clean up and publish with the 1.0.0 release.
+
+note to self: binary resources can be extracted in MPW via: `DeRez "Macintosh HD:whatever" -skip "'CODE'" -skip "'DATA'" -skip "'RELA'" -skip "'SIZE'"` etc., this is especially useful for icons
 
 license
 -------
