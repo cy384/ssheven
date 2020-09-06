@@ -22,7 +22,7 @@ struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NUL
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
 
-char hostname[256] = {0};
+char hostname[512] = {0};
 char username[256] = {0};
 char password[256] = {0};
 
@@ -600,7 +600,7 @@ int intro_dialog(char* hostname, char* username, char* password)
 	DialogPtr dlg = GetNewDialog(DLOG_CONNECT, 0, (WindowPtr)-1);
 	InitCursor();
 
-	// select all text in dialog item 4 (the hostname+port one)
+	// select all text in dialog item 4 (the hostname one)
 	SelectDialogItemText(dlg, 4, 0, 32767);
 
 	DialogItemType type;
@@ -616,8 +616,12 @@ int intro_dialog(char* hostname, char* username, char* password)
 	GetDialogItem(dlg, 4, &type, &itemH, &box);
 	address_text_box = (ControlHandle)itemH;
 
+	ControlHandle port_text_box;
+	GetDialogItem(dlg, 5, &type, &itemH, &box);
+	port_text_box = (ControlHandle)itemH;
+
 	ControlHandle username_text_box;
-	GetDialogItem(dlg, 6, &type, &itemH, &box);
+	GetDialogItem(dlg, 7, &type, &itemH, &box);
 	username_text_box = (ControlHandle)itemH;
 
 	// let the modalmanager do everything
@@ -625,11 +629,15 @@ int intro_dialog(char* hostname, char* username, char* password)
 	short item;
 	do {
 		ModalDialog(NULL, &item);
-	} while(item != 1 && item != 7);
+	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
 	GetDialogItemText((Handle)address_text_box, hostname);
 	GetDialogItemText((Handle)username_text_box, username);
+
+	// splice the port number onto the hostname (n.b. they're pascal strings)
+	GetDialogItemText((Handle)port_text_box, hostname+hostname[0]+1);
+	hostname[hostname[0]+1] = ':';
 
 	// clean it up
 	DisposeDialog(dlg);

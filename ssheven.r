@@ -48,11 +48,14 @@ resource 'DITL' (DITL_CONNECT) {
 		{ 190-10-20-5, 320-10-80-5, 190-10+5, 320-10+5 },
 		UserItem { enabled };
 
-		{ 10, 10, 30, 310 },
-		StaticText { enabled, "Address with port" };
+		{ 10, 10, 30, 270 },
+		StaticText { enabled, "Address and port" };
 
-		{ 35, 15, 51, 305 },
-		EditText { enabled, "10.0.2.2:22" };
+		{ 35, 15, 51, 260 },
+		EditText { enabled, "10.0.2.2" };
+
+		{ 35, 270, 51, 305 },
+		EditText { enabled, "22" };
 
 		{ 60, 10, 80, 310 },
 		StaticText { enabled, "Username" };
