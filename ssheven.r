@@ -197,6 +197,30 @@ resource 'DITL' (DITL_PASSWORD) {
 	}
 };
 
+resource 'DITL' (DITL_PW_FAIL) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "OK" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Server rejected username/password!" };
+	}
+};
+
+resource 'ALRT' (ALRT_PW_FAIL, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_PW_FAIL,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
 #include "Processes.r"
 
 resource 'SIZE' (-1) {

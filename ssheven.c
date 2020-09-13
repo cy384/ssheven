@@ -456,16 +456,6 @@ int init_connection(char* hostname)
 	return 1;
 }
 
-int ssh_password_auth(char* username, char* password)
-{
-	int rc = 1;
-
-	SSH_CHECK(libssh2_userauth_password(ssh_con.session, username, password));
-	ssh_con.channel = libssh2_channel_open_session(ssh_con.session);
-
-	return 1;
-}
-
 int ssh_setup_terminal(void)
 {
 	int rc = 0;
@@ -639,7 +629,9 @@ int intro_dialog(char* hostname, char* username, char* password)
 void* read_thread(void* arg)
 {
 	int ok = 1;
+	int rc = LIBSSH2_ERROR_NONE;
 
+	// yield until we're given a command
 	while (read_thread_command == WAIT) YieldToAnyThread();
 
 	if (read_thread_command == EXIT)
@@ -653,25 +645,41 @@ void* read_thread(void* arg)
 
 	if (ok)
 	{
-		printf_i("authenticating... "); YieldToAnyThread();
-		ok = ssh_password_auth(username+1, password+1);
-		printf_i("done.\r\n"); YieldToAnyThread();
+		printf_i("Authenticating... "); YieldToAnyThread();
+		rc = libssh2_userauth_password(ssh_con.session, username+1, password+1);
+
+		if (rc == LIBSSH2_ERROR_NONE)
+		{
+			printf_i("done.\r\n");
+		}
+		else
+		{
+			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED) StopAlert(ALRT_PW_FAIL, nil);
+			printf_i("failure: %s\r\n", libssh2_error_string(rc));
+			ok = 0;
+		}
 	}
 
+	// if we logged in, open and set up the tty
 	if (ok)
 	{
+		ssh_con.channel = libssh2_channel_open_session(ssh_con.session);
 		ok = ssh_setup_terminal();
 		YieldToAnyThread();
 	}
 
-	// if we failed, exit
-	if (read_thread_state != OPEN) return 0;
+	// if we failed, close everything and exit
+	if (!ok || (read_thread_state != OPEN))
+	{
+		end_connection();
+		return 0;
+	}
 
-	// allow pasting
+	// if we connected, allow pasting
 	void* menu = GetMenuHandle(MENU_EDIT);
 	EnableItem(menu, 5);
 
-	// loop as long until we've failed or are asked to EXIT
+	// process incoming data until we've failed or are asked to EXIT
 	while (read_thread_command == READ && read_thread_state == OPEN)
 	{
 		check_network_events();
@@ -681,6 +689,7 @@ void* read_thread(void* arg)
 	// if we still have a connection, close it
 	if (read_thread_state != DONE) end_connection();
 
+	// disallow pasting after connection is closed
 	DisableItem(menu, 5);
 
 	return 0;

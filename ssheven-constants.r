@@ -55,6 +55,10 @@
 #define DLOG_PASSWORD 134
 #define DITL_PASSWORD 134
 
+/* alert for password authentication failure */
+#define ALRT_PW_FAIL 135
+#define DITL_PW_FAIL 135
+
 /* menus */
 #define MBAR_SSHEVEN 128
 #define MENU_APPLE   128
