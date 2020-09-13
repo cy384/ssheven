@@ -40,24 +40,10 @@ pascal void ButtonFrameProc(DialogRef dlg, DialogItemIndex itemNo)
 	FrameRoundRect(&box, 16, 16);
 }
 
-// event handler for a thread to yield when blocked
-static pascal void yield_notifier(void* contextPtr, OTEventCode code, OTResult result, void* cookie)
-{
-	switch (code)
-	{
-		case kOTSyncIdleEvent:
-			YieldToAnyThread();
-			break;
-
-		default:
-			break;
-	}
-}
-
 // read from the channel and print to console
 void ssh_read(void)
 {
-	size_t rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
+	ssize_t rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
 
 	if (rc == 0) return;
 
@@ -72,7 +58,7 @@ void ssh_read(void)
 	}
 }
 
-int end_connection(void)
+void end_connection(void)
 {
 	read_thread_state = CLEANUP;
 
@@ -91,10 +77,9 @@ int end_connection(void)
 	if (ssh_con.endpoint != kOTInvalidEndpointRef)
 	{
 		// request to close the TCP connection
-		//OT_CHECK(OTSndOrderlyDisconnect(ssh_con.endpoint));
 		OTSndOrderlyDisconnect(ssh_con.endpoint);
 
-		// get and discard remaining data so we can finish closing the connection
+		// discard remaining data so we can finish closing the connection
 		int rc = 1;
 		OTFlags ot_flags;
 		while (rc != kOTLookErr)
@@ -120,16 +105,16 @@ int end_connection(void)
 				break;
 
 			default:
-				printf_i("unexpected OTLook result while closing: %s\r\n", OT_event_string(result));
+				printf_i("Unexpected OTLook result while closing: %s\r\n", OT_event_string(result));
 				break;
 		}
 
 		// release endpoint
 		err = OTUnbind(ssh_con.endpoint);
-		if (err != noErr) printf_i("OTUnbind failed\r\n");
+		if (err != noErr) printf_i("OTUnbind failed.\r\n");
 
 		err = OTCloseProvider(ssh_con.endpoint);
-		if (err != noErr) printf_i("OTCloseProvider failed\r\n");
+		if (err != noErr) printf_i("OTCloseProvider failed.\r\n");
 	}
 
 	read_thread_state = DONE;
@@ -197,10 +182,10 @@ void ssh_write(char* buf, size_t len)
 	if (read_thread_state == OPEN && read_thread_command != EXIT)
 	{
 		int r = libssh2_channel_write(ssh_con.channel, buf, len);
+
 		if (r < 1)
 		{
-			printf_i("failed to write to channel!\r\n");
-			printf_i("closing connection!\r\n");
+			printf_i("Failed to write to channel, closing connection.\r\n");
 			read_thread_command = EXIT;
 		}
 	}
@@ -221,7 +206,7 @@ void ssh_paste(void)
 	DisposeHandle(buf);
 }
 
-/* returns 1 if quit selected, else 0 */
+// returns 1 if quit selected, else 0
 int process_menu_select(int32_t result)
 {
 	int exit = 0;
@@ -267,7 +252,10 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 	// bottom = max vertical
 	// left = min horizontal
 	// right = max horizontal
-	Rect window_limits = { .top = con.cell_height*2 + 2, .bottom = con.cell_height*100 + 2, .left = con.cell_width*10 + 4, .right = con.cell_width*200 + 4 };
+	Rect window_limits = { .top = con.cell_height*2 + 2,
+		.bottom = con.cell_height*100 + 2,
+		.left = con.cell_width*10 + 4,
+		.right = con.cell_width*200 + 4 };
 
 	long growResult = GrowWindow(eventWin, event.where, &window_limits);
 
@@ -299,7 +287,7 @@ void event_loop(void)
 	WindowPtr eventWin;
 
 	// maximum length of time to sleep (in ticks)
-	// GetCaretTime gets the number of ticks between caret on/off time
+	// GetCaretTime gets the number of ticks between system caret on/off time
 	long int sleep_time = GetCaretTime() / 4;
 
 	do
@@ -318,9 +306,9 @@ void event_loop(void)
 		// might need to toggle our cursor even if we got an event
 		check_cursor();
 
-		// handle any mac gui events
-		char c = 0;
-		int r = 0;
+		// handle any GUI events
+		unsigned char c = 0;
+
 		switch(event.what)
 		{
 			case updateEvt:
@@ -409,23 +397,21 @@ int init_connection(char* hostname)
 	OSStatus err = noErr;
 	TCall sndCall;
 	DNSAddress hostDNSAddress;
-	OSStatus result;
 
-	printf_i("opening and configuring endpoint... "); YieldToAnyThread();
+	printf_i("Opening and configuring endpoint... "); YieldToAnyThread();
 
 	// open TCP endpoint
 	ssh_con.endpoint = OTOpenEndpoint(OTCreateConfiguration(kTCPName), 0, nil, &err);
 
 	if (err != noErr || ssh_con.endpoint == kOTInvalidEndpointRef)
 	{
-		printf_i("failed to open OT TCP endpoint\r\n");
+		printf_i("failed to open Open Transport TCP endpoint.\r\n");
 		return 0;
 	}
 
 	OT_CHECK(OTSetSynchronous(ssh_con.endpoint));
 	OT_CHECK(OTSetBlocking(ssh_con.endpoint));
 	OT_CHECK(OTUseSyncIdleEvents(ssh_con.endpoint, false));
-
 
 	OT_CHECK(OTBind(ssh_con.endpoint, nil, nil));
 
@@ -439,28 +425,28 @@ int init_connection(char* hostname)
 	sndCall.addr.buf = (UInt8 *) &hostDNSAddress;
 	sndCall.addr.len = OTInitDNSAddress(&hostDNSAddress, (char *) hostname);
 
-	printf_i("connecting endpoint... "); YieldToAnyThread();
+	printf_i("Connecting endpoint... "); YieldToAnyThread();
 	OT_CHECK(OTConnect(ssh_con.endpoint, &sndCall, nil));
 
 	printf_i("done.\r\n"); YieldToAnyThread();
 
-	printf_i("initializing SSH... "); YieldToAnyThread();
+	printf_i("Initializing SSH... "); YieldToAnyThread();
 	// init libssh2
 	SSH_CHECK(libssh2_init(0));
 
 	printf_i("done.\r\n"); YieldToAnyThread();
 
-	printf_i("opening SSH session... "); YieldToAnyThread();
+	printf_i("Opening SSH session... "); YieldToAnyThread();
 	ssh_con.session = libssh2_session_init();
 	if (ssh_con.session == 0)
 	{
-		printf_i("failed to initialize SSH library\r\n");
+		printf_i("failed to initialize SSH session.\r\n");
 		return 0;
 	}
 	printf_i("done.\r\n"); YieldToAnyThread();
 
 	long s = TickCount();
-	printf_i("beginning SSH session handshake... "); YieldToAnyThread();
+	printf_i("Beginning SSH session handshake... "); YieldToAnyThread();
 	SSH_CHECK(libssh2_session_handshake(ssh_con.session, ssh_con.endpoint));
 
 	printf_i("done. (%d ticks)\r\n", TickCount() - s); YieldToAnyThread();
@@ -472,7 +458,6 @@ int init_connection(char* hostname)
 
 int ssh_password_auth(char* username, char* password)
 {
-	OSStatus err = noErr;
 	int rc = 1;
 
 	SSH_CHECK(libssh2_userauth_password(ssh_con.session, username, password));
@@ -496,7 +481,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 {
 	DialogPtr evtDlog;
 	short selStart, selEnd;
-	long ticks;
+	long unsigned ticks;
 	Handle itemH;
 	DialogItemType type;
 	Rect box;
@@ -534,6 +519,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 					*itemHit = 6;
 					return true;
 				}
+				break;
 
 			case kLeftArrowCharCode:
 			case kRightArrowCharCode:
@@ -563,6 +549,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 // 1 for ok, 0 for cancel
 int password_dialog(void)
 {
+	int ret = 1;
 	// n.b. dialog strings can't be longer than this, so no overflow risk
 	//static char password[256];
 	DialogPtr dlog;
@@ -581,15 +568,15 @@ int password_dialog(void)
 		ModalDialog(NewModalFilterUPP(TwoItemFilter), &item);
 	} while (item != 1 && item != 6); // until OK or cancel
 
-	if (6 == item) return 0;
+	if (6 == item) ret = 0;
 
 	// read out of the hidden text box
 	GetDialogItem(dlog, 5, &type, &itemH, &box);
-	GetDialogItemText(itemH, password);
+	GetDialogItemText(itemH, (unsigned char*)password);
 
 	DisposeDialog(dlog);
 
-	return 1;
+	return ret;
 }
 
 int intro_dialog(char* hostname, char* username, char* password)
@@ -609,7 +596,7 @@ int intro_dialog(char* hostname, char* username, char* password)
 
 	// draw default button indicator around the connect button
 	GetDialogItem(dlg, 2, &type, &itemH, &box);
-	SetDialogItem(dlg, 2, type, (Handle) NewUserItemUPP(&ButtonFrameProc), &box);
+	SetDialogItem(dlg, 2, type, (Handle)NewUserItemUPP(&ButtonFrameProc), &box);
 
 	// get the handles for each of the text boxes
 	ControlHandle address_text_box;
@@ -632,11 +619,11 @@ int intro_dialog(char* hostname, char* username, char* password)
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
-	GetDialogItemText((Handle)address_text_box, hostname);
-	GetDialogItemText((Handle)username_text_box, username);
+	GetDialogItemText((Handle)address_text_box, (unsigned char *)hostname);
+	GetDialogItemText((Handle)username_text_box, (unsigned char *)username);
 
 	// splice the port number onto the hostname (n.b. they're pascal strings)
-	GetDialogItemText((Handle)port_text_box, hostname+hostname[0]+1);
+	GetDialogItemText((Handle)port_text_box, (unsigned char *)hostname+hostname[0]+1);
 	hostname[hostname[0]+1] = ':';
 
 	// clean it up
@@ -644,15 +631,11 @@ int intro_dialog(char* hostname, char* username, char* password)
 	FlushEvents(everyEvent, -1);
 
 	// if we hit cancel, 0
-	if (item == 7) return 0;
+	if (item == 8) return 0;
 
 	return password_dialog();
 }
 
-//enum { WAIT, READ, EXIT } read_thread_command = WAIT;
-//enum { UNITIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNITIALIZED;
-
-// TODO: threads
 void* read_thread(void* arg)
 {
 	int ok = 1;
@@ -870,14 +853,15 @@ int main(int argc, char** argv)
 	draw_screen(&(con.win->portRect));
 	EndUpdate(con.win);
 
-	if (!intro_dialog(hostname, username, password)) ok = 0;
+	ok = intro_dialog(hostname, username, password);
+
 	if (!ok) printf_i("Cancelled, not connecting.\r\n");
 
 	if (ok)
 	{
 		if (InitOpenTransport() != noErr)
 		{
-			printf_i("failed to initialize OT\r\n");
+			printf_i("Failed to initialize Open Transport.\r\n");
 			ok = 0;
 		}
 	}
@@ -889,14 +873,13 @@ int main(int argc, char** argv)
 
 		if (ssh_con.recv_buffer == NULL || ssh_con.send_buffer == NULL)
 		{
-			printf_i("failed to allocate network buffers\r\n");
+			printf_i("Failed to allocate network data buffers.\r\n");
 			ok = 0;
 		}
 	}
 
 	// create the network read/print thread
 	read_thread_command = WAIT;
-	int read_thread_result = 0;
 	ThreadID read_thread_id = 0;
 
 	if (ok)
@@ -905,8 +888,8 @@ int main(int argc, char** argv)
 
 		if (err < 0)
 		{
+			printf_i("Failed to create network read thread.\r\n");
 			ok = 0;
-			printf_i("failed to create network read thread\r\n");
 		}
 	}
 
@@ -914,24 +897,20 @@ int main(int argc, char** argv)
 	if (ok) read_thread_command = READ;
 
 	// procede into our main event loop
-	if (ok) event_loop();
+	event_loop();
 
-	// tell the read thread to quit, then let it run to actually do so
+	// tell the read thread to finish, then let it run to actually do so
 	read_thread_command = EXIT;
+
 	if (read_thread_state != UNINTIALIZED)
-		while (read_thread_state != DONE)
-			YieldToAnyThread();
-
-	//OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
-	//YieldToThread(read_thread_id);
-	//	err = DisposeThread(read_thread_id, (void*)&read_thread_result, 0);
-	//err = DisposeThread(read_thread_id, NULL, 0);
-
-	if (ok)
 	{
-		BeginUpdate(con.win);
-		draw_screen(&(con.win->portRect));
-		EndUpdate(con.win);
+		while (read_thread_state != DONE)
+		{
+			BeginUpdate(con.win);
+			draw_screen(&(con.win->portRect));
+			EndUpdate(con.win);
+			YieldToAnyThread();
+		}
 	}
 
 	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
@@ -939,7 +918,7 @@ int main(int argc, char** argv)
 
 	if (con.vterm != NULL) vterm_free(con.vterm);
 
-	if (ok)
+	if (ssh_con.endpoint != kOTInvalidEndpointRef)
 	{
 		err = OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
 		CloseOpenTransport();

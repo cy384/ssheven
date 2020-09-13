@@ -61,7 +61,7 @@ void toggle_cursor(void)
 
 void check_cursor(void)
 {
-	long int now = TickCount();
+	long unsigned int now = TickCount();
 	if ((now - con.last_cursor_blink) > GetCaretTime())
 	{
 		toggle_cursor();
@@ -246,7 +246,7 @@ void printf_i(const char* str, ...)
 void set_window_title(WindowPtr w, const char* c_name)
 {
 	Str255 pascal_name;
-	strncpy((char *) &pascal_name[1], c_name, 255);
+	strncpy((char *) &pascal_name[1], c_name, 254);
 	pascal_name[0] = strlen(c_name);
 
 	SetWTitle(w, pascal_name);
@@ -368,8 +368,6 @@ void console_setup(void)
 
 	SetPort(win);
 	EraseRect(&portRect);
-
-	int exit_main_loop = 0;
 
 	con.win = win;
 
