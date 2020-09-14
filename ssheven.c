@@ -647,14 +647,16 @@ int intro_dialog(char* hostname, char* username, char* password)
 	GetDialogItemText((Handle)port_text_box, (unsigned char *)hostname+hostname[0]+1);
 	hostname[hostname[0]+1] = ':';
 
+	// if we hit cancel, 0
+	if (item == 8) return 0;
+
+	int use_password = GetControlValue(password_radio);
+
 	// clean it up
 	DisposeDialog(dlg);
 	FlushEvents(everyEvent, -1);
 
-	// if we hit cancel, 0
-	if (item == 8) return 0;
-
-	if (GetControlValue(password_radio) == 1)
+	if (use_password)
 	{
 		return password_dialog();
 	}
