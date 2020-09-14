@@ -573,6 +573,13 @@ int password_dialog(void)
 	return ret;
 }
 
+int key_dialog(void)
+{
+	// TODO: keys
+	printf_i("key authentication not implemented yet\r\n");
+	return 0;
+}
+
 int intro_dialog(char* hostname, char* username, char* password)
 {
 	// modal dialog setup
@@ -605,11 +612,31 @@ int intro_dialog(char* hostname, char* username, char* password)
 	GetDialogItem(dlg, 7, &type, &itemH, &box);
 	username_text_box = (ControlHandle)itemH;
 
+	ControlHandle password_radio;
+	GetDialogItem(dlg, 9, &type, &itemH, &box);
+	password_radio = (ControlHandle)itemH;
+	SetControlValue(password_radio, 1);
+
+	ControlHandle key_radio;
+	GetDialogItem(dlg, 10, &type, &itemH, &box);
+	key_radio = (ControlHandle)itemH;
+	SetControlValue(key_radio, 0);
+
 	// let the modalmanager do everything
 	// stop when the connect button is hit
 	short item;
 	do {
 		ModalDialog(NULL, &item);
+		if (item == 9)
+		{
+			SetControlValue(key_radio, 0);
+			SetControlValue(password_radio, 1);
+		}
+		else if (item == 10)
+		{
+			SetControlValue(key_radio, 1);
+			SetControlValue(password_radio, 0);
+		}
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
@@ -627,7 +654,14 @@ int intro_dialog(char* hostname, char* username, char* password)
 	// if we hit cancel, 0
 	if (item == 8) return 0;
 
-	return password_dialog();
+	if (GetControlValue(password_radio) == 1)
+	{
+		return password_dialog();
+	}
+	else
+	{
+		return key_dialog();
+	}
 }
 
 void* read_thread(void* arg)

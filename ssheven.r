@@ -60,11 +60,17 @@ resource 'DITL' (DITL_CONNECT) {
 		{ 60, 10, 80, 310 },
 		StaticText { enabled, "Username" };
 
-		{ 85, 15, 101, 305 },
+		{ 85, 15, 101, 150 },
 		EditText { enabled, "" };
 
 		{ 115, 10, 135, 90 },
 		Button { enabled, "Cancel" };
+
+		{ 85, 160, 101, 245 },
+		RadioButton { enabled, "Password" };
+
+		{ 85, 250, 101, 310 },
+		RadioButton { enabled, "Key" };
 	}
 };
 
