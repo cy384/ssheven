@@ -120,8 +120,9 @@ void end_connection(void)
 	read_thread_state = DONE;
 }
 
-void check_network_events(void)
+int check_network_events(void)
 {
+	int ok = 1;
 	OSStatus err = noErr;
 
 	// check if we have any new network events
@@ -132,18 +133,20 @@ void check_network_events(void)
 		case T_DATA:
 		case T_EXDATA:
 			// got data
-			ssh_read();
+			// we always try to read, so ignore this event
 			break;
 
 		case T_RESET:
 			// connection reset? close it/give up
 			end_connection();
+			ok = 0;
 			break;
 
 		case T_DISCONNECT:
 			// got disconnected
 			OTRcvDisconnect(ssh_con.endpoint, nil);
 			end_connection();
+			ok = 0;
 			break;
 
 		case T_ORDREL:
@@ -154,6 +157,7 @@ void check_network_events(void)
 				err = OTSndOrderlyDisconnect(ssh_con.endpoint);
 			}
 			end_connection();
+			ok = 0;
 			break;
 
 		default:
@@ -161,7 +165,7 @@ void check_network_events(void)
 			break;
 	}
 
-	return;
+	return ok;
 }
 
 void display_about_box(void)
@@ -682,7 +686,7 @@ void* read_thread(void* arg)
 	// process incoming data until we've failed or are asked to EXIT
 	while (read_thread_command == READ && read_thread_state == OPEN)
 	{
-		check_network_events();
+		if (check_network_events()) ssh_read();
 		YieldToAnyThread();
 	}
 
