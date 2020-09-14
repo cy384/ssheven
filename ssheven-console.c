@@ -128,6 +128,7 @@ void draw_screen(Rect* r)
 
 	// do the cursor if needed
 	if (con.cursor_state == 1 &&
+		con.cursor_visible == 1 &&
 		con.cursor_y >= minRow &&
 		con.cursor_y <= maxRow &&
 		con.cursor_x >= minCol &&
@@ -300,12 +301,13 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 		case VTERM_PROP_TITLE: // string
 			set_window_title(con.win, val->string);
 			return 1;
-		// TODO: handle more of these, particularly cursor visible and blink
+		case VTERM_PROP_CURSORVISIBLE: // bool
+			con.cursor_visible = val->boolean;
+			return 1;
 		case VTERM_PROP_ICONNAME: // string
 		case VTERM_PROP_REVERSE: //bool
 		case VTERM_PROP_CURSORSHAPE: // number
 		case VTERM_PROP_MOUSE: // number
-		case VTERM_PROP_CURSORVISIBLE: // bool
 		case VTERM_PROP_CURSORBLINK: // bool
 		case VTERM_PROP_ALTSCREEN: // bool
 		default:

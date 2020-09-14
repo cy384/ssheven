@@ -16,7 +16,7 @@
 #define SSH_CHECK(X) rc = (X); if (rc != LIBSSH2_ERROR_NONE) { printf_i("" #X " failed: %s\r\n", libssh2_error_string(rc)); return 0;};
 
 // sinful globals
-struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL };
+struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 1, NULL, NULL };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;

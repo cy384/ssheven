@@ -50,6 +50,7 @@ struct ssheven_console
 
 	int cursor_state;
 	long int last_cursor_blink;
+	int cursor_visible;
 
 	VTerm* vterm;
 	VTermScreen* vts;
