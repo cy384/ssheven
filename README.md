@@ -4,13 +4,13 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.5.0 (see github releases), a functional SSH client with decent terminal emulation, able to run programs like `htop` and `nano`.  See "to do" section below for upcoming work.
+Project status: as of 0.6.0 (see github releases), a functional SSH client with decent terminal emulation, with login via key or password, and is able to run programs like `htop` and `nano`.  See "to do" section below for upcoming work.
 
 ![ssheven screenshot](http://www.cy384.com/media/img/ssheven-0.5.0-screenshot.png)
 
 system requirements
 -------------------
-* CPU: Any PPC processor, or a 33 MHz 68040 (maybe a 68LC040, maybe 25 MHz).
+* CPU: Any PPC processor, or a 33 MHz 68040/68LC040 (maybe 25 MHz).  Presently, all 68030/68020 CPUs are too slow.
 * RAM: 2MB
 * Disk space: 1MB for the fat binary
 * System 7.5 recommended, earlier System 7 versions possible with the Thread Manager extension installed
@@ -18,17 +18,17 @@ system requirements
 
 to do
 -----
-* refactor libssh2 usage to handle errors and centralize network ops
-* key authentication, and radio buttons on connection dialog for password vs key
-* preferences
-* saving/loading connection settings
+* preferences file
+* saving/loading connection settings as a filetype
 * check server keys/known hosts/keys
-* nicer error presentation for issues like wrong password or bad connection (not connected to network, no dns, etc.)
+* clean up libssh2 network ops
+* nicer error presentation for more failure cases
 * read Apple HIG and obsessively optimize placement of all GUI elements
-* improve draw speed (big refactor, need to use an "offscreen graphics world" framebuffer, also hook scrolling into vterm)
-* figure out retro68 mcpu issue, improve 68k connection performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
+* hook scrolling into vterm
+* figure out retro68 mcpu issue
+* improve 68k connection performance (rewrite `mbedtls_mpi_exp_mod` in assembly)
+* improve draw speed (big refactor, need to use an "offscreen graphics world" framebuffer)
 * font size options
-* hook in more libvterm callbacks
 * text selection + copy
 * color
 
