@@ -21,10 +21,13 @@ struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NUL
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
+enum { KEY_LOGIN, PASSWORD_LOGIN } login_type = PASSWORD_LOGIN;
 
 char hostname[512] = {0};
 char username[256] = {0};
 char password[256] = {0};
+char* pubkey_path = NULL;
+char* privkey_path = NULL;
 
 // borrowed from Retro68 sample code
 // draws the "default" indicator around a button
@@ -541,7 +544,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 
 // from the ATS password sample code
 // 1 for ok, 0 for cancel
-int password_dialog(void)
+int password_dialog(int dialog_resource)
 {
 	int ret = 1;
 	// n.b. dialog strings can't be longer than this, so no overflow risk
@@ -552,7 +555,7 @@ int password_dialog(void)
 	Rect box;
 	DialogItemType type;
 
-	dlog = GetNewDialog(DLOG_PASSWORD, 0, (WindowPtr) - 1);
+	dlog = GetNewDialog(dialog_resource, 0, (WindowPtr) - 1);
 
 	// draw default button indicator around the connect button
 	GetDialogItem(dlog, 2, &type, &itemH, &box);
@@ -567,17 +570,154 @@ int password_dialog(void)
 	// read out of the hidden text box
 	GetDialogItem(dlog, 5, &type, &itemH, &box);
 	GetDialogItemText(itemH, (unsigned char*)password);
+	login_type = PASSWORD_LOGIN;
 
 	DisposeDialog(dlog);
 
 	return ret;
 }
 
+// derived from More Files sample code
+OSErr
+FSpPathFromLocation(
+FSSpec *spec,		/* The location we want a path for. */
+int *length,		/* Length of the resulting path. */
+Handle *fullPath)		/* Handle to path. */
+{
+	OSErr err;
+	FSSpec tempSpec;
+	CInfoPBRec pb;
+
+	*fullPath = NULL;
+
+	/* 
+	* Make a copy of the input FSSpec that can be modified.
+	*/
+	BlockMoveData(spec, &tempSpec, sizeof(FSSpec));
+
+	if (tempSpec.parID == fsRtParID) {
+		/*
+		* The object is a volume.  Add a colon to make it a full
+		* pathname.  Allocate a handle for it and we are done.
+		*/
+		tempSpec.name[0] += 2;
+		tempSpec.name[tempSpec.name[0] - 1] = ':';
+		tempSpec.name[tempSpec.name[0]] = '\0';
+
+		err = PtrToHand(&tempSpec.name[1], fullPath, tempSpec.name[0]);
+	} else {
+		/* 
+		* The object isn't a volume.  Is the object a file or a directory? 
+		*/
+		pb.dirInfo.ioNamePtr = tempSpec.name;
+		pb.dirInfo.ioVRefNum = tempSpec.vRefNum;
+		pb.dirInfo.ioDrDirID = tempSpec.parID;
+		pb.dirInfo.ioFDirIndex = 0;
+		err = PBGetCatInfoSync(&pb);
+
+		if ((err == noErr) || (err == fnfErr)) {
+			/*
+			* If the file doesn't currently exist we start over.  If the
+			* directory exists everything will work just fine.  Otherwise we
+			* will just fail later.  If the object is a directory, append a
+			* colon so full pathname ends with colon.
+			*/
+			if (err == fnfErr) {
+			BlockMoveData(spec, &tempSpec, sizeof(FSSpec));
+			} else if ( (pb.hFileInfo.ioFlAttrib & ioDirMask) != 0 ) {
+			tempSpec.name[0] += 1;
+			tempSpec.name[tempSpec.name[0]] = ':';
+			}
+
+			/* 
+			* Create a new Handle for the object - make it a C string
+			*/
+			tempSpec.name[0] += 1;
+			tempSpec.name[tempSpec.name[0]] = '\0';
+			err = PtrToHand(&tempSpec.name[1], fullPath, tempSpec.name[0]);
+			if (err == noErr) {
+				/* 
+				* Get the ancestor directory names - loop until we have an
+				* error or find the root directory.
+				*/
+				pb.dirInfo.ioNamePtr = tempSpec.name;
+				pb.dirInfo.ioVRefNum = tempSpec.vRefNum;
+				pb.dirInfo.ioDrParID = tempSpec.parID;
+				do {
+					pb.dirInfo.ioFDirIndex = -1;
+					pb.dirInfo.ioDrDirID = pb.dirInfo.ioDrParID;
+					err = PBGetCatInfoSync(&pb);
+					if (err == noErr) {
+						/* 
+						* Append colon to directory name and add
+						* directory name to beginning of fullPath
+						*/
+						++tempSpec.name[0];
+						tempSpec.name[tempSpec.name[0]] = ':';
+							
+						(void) Munger(*fullPath, 0, NULL, 0, &tempSpec.name[1],
+						tempSpec.name[0]);
+						err = MemError();
+					}
+				} while ( (err == noErr) && (pb.dirInfo.ioDrDirID != fsRtDirID) );
+			}
+		}
+	}
+
+	/*
+	* On error Dispose the handle, set it to NULL & return the err.
+	* Otherwise, set the length & return.
+	*/
+	if (err == noErr) {
+	*length = GetHandleSize(*fullPath) - 1;
+	} else {
+	if ( *fullPath != NULL ) {
+	DisposeHandle(*fullPath);
+	}
+	*fullPath = NULL;
+	*length = 0;
+	}
+
+	return err;
+}
+
 int key_dialog(void)
 {
-	// TODO: keys
-	printf_i("key authentication not implemented yet\r\n");
-	return 0;
+	Handle full_path = NULL;
+	int path_length = 0;
+
+	// get public key path
+	NoteAlert(ALRT_PUBKEY, nil);
+	StandardFileReply pubkey;
+	StandardGetFile(NULL, 0, NULL, &pubkey);
+	FSpPathFromLocation(&pubkey.sfFile, &path_length, &full_path);
+	pubkey_path = malloc(path_length+1);
+	strncpy(pubkey_path, (char*)(*full_path), path_length+1);
+	DisposeHandle(full_path);
+
+	path_length = 0;
+	full_path = NULL;
+
+	// if the user hit cancel, 0
+	if (!pubkey.sfGood) return 0;
+
+	// get private key path
+	NoteAlert(ALRT_PRIVKEY, nil);
+	StandardFileReply privkey;
+	StandardGetFile(NULL, 0, NULL, &privkey);
+	FSpPathFromLocation(&privkey.sfFile, &path_length, &full_path);
+	privkey_path = malloc(path_length+1);
+	strncpy(privkey_path, (char*)(*full_path), path_length+1);
+	DisposeHandle(full_path);
+
+	// if the user hit cancel, 0
+	if (!privkey.sfGood) return 0;
+
+	// get the key decryption password
+	if (!password_dialog(DLOG_KEY_PASSWORD)) return 0;
+
+	login_type = KEY_LOGIN;
+	return 1;
 }
 
 int intro_dialog(char* hostname, char* username, char* password)
@@ -658,7 +798,7 @@ int intro_dialog(char* hostname, char* username, char* password)
 
 	if (use_password)
 	{
-		return password_dialog();
+		return password_dialog(DLOG_PASSWORD);
 	}
 	else
 	{
@@ -686,7 +826,20 @@ void* read_thread(void* arg)
 	if (ok)
 	{
 		printf_i("Authenticating... "); YieldToAnyThread();
-		rc = libssh2_userauth_password(ssh_con.session, username+1, password+1);
+
+		if (login_type == PASSWORD_LOGIN)
+		{
+			rc = libssh2_userauth_password(ssh_con.session, username+1, password+1);
+		}
+		else
+		{
+			rc = libssh2_userauth_publickey_fromfile_ex(ssh_con.session,
+				username+1,
+				username[0],
+				pubkey_path,
+				privkey_path,
+				password+1);
+		}
 
 		if (rc == LIBSSH2_ERROR_NONE)
 		{
@@ -964,6 +1117,9 @@ int main(int argc, char** argv)
 
 	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
 	if (ssh_con.send_buffer != NULL) OTFreeMem(ssh_con.send_buffer);
+
+	if (pubkey_path != NULL) free(pubkey_path);
+	if (privkey_path != NULL) free(privkey_path);
 
 	if (con.vterm != NULL) vterm_free(con.vterm);
 

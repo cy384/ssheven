@@ -59,6 +59,18 @@
 #define ALRT_PW_FAIL 135
 #define DITL_PW_FAIL 135
 
+/* alert for requesting public key */
+#define ALRT_PUBKEY 136
+#define DITL_PUBKEY 136
+
+/* alert for requesting private key */
+#define ALRT_PRIVKEY 137
+#define DITL_PRIVKEY 137
+
+/* alert for requesting key decryption password */
+#define DLOG_KEY_PASSWORD 138
+#define DITL_KEY_PASSWORD 138
+
 /* menus */
 #define MBAR_SSHEVEN 128
 #define MENU_APPLE   128

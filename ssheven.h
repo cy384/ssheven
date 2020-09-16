@@ -23,6 +23,7 @@
 #include <Scrap.h>
 #include <Controls.h>
 #include <ControlDefinitions.h>
+#include <StandardFile.h>
 
 // libssh2
 #include <libssh2.h>

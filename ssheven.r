@@ -110,7 +110,7 @@ resource 'DITL' (DITL_TM) {
 
 resource 'ALRT' (ALRT_TM, purgeable) {
 	{ 50, 100, 50+80, 100+350 },
-	ALRT_TM,
+	DITL_TM,
 
 	/* OK means draw default border on first button */
 	{
@@ -203,6 +203,39 @@ resource 'DITL' (DITL_PASSWORD) {
 	}
 };
 
+resource 'DLOG' (DLOG_KEY_PASSWORD) {
+	{ 50, 100, 150, 420 },
+	dBoxProc,
+	visible,
+	noGoAway,
+	0,
+	DLOG_KEY_PASSWORD,
+	"",
+	centerMainScreen
+};
+
+resource 'DITL' (DITL_KEY_PASSWORD) {
+	{
+		{ 70, 320-10-80, 90, 320-10 },
+		Button { enabled, "OK" };
+
+		{ 190-10-20-5, 320-10-80-5, 190-10+5, 320-10+5 },
+		UserItem { enabled };
+
+		{ 10, 10, 30, 310 },
+		StaticText { enabled, "Key decryption password:" };
+
+		{ 35, 15, 51, 305 },
+		EditText { enabled, "" };
+
+		{ 240, 10, 240, 10 },
+		EditText { enabled, "" };
+
+		{ 70, 10, 90, 90 },
+		Button { enabled, "Cancel" };
+	}
+};
+
 resource 'DITL' (DITL_PW_FAIL) {
 	{
 		{ 50, 260, 70, 340 },
@@ -216,6 +249,54 @@ resource 'DITL' (DITL_PW_FAIL) {
 resource 'ALRT' (ALRT_PW_FAIL, purgeable) {
 	{ 50, 100, 50+80, 100+350 },
 	DITL_PW_FAIL,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
+resource 'DITL' (DITL_PUBKEY) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "OK" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Please locate your public key." };
+	}
+};
+
+resource 'ALRT' (ALRT_PUBKEY, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_PUBKEY,
+
+	/* OK means draw default border on first button */
+	{
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent,
+		OK, visible, silent
+	},
+	alertPositionMainScreen
+};
+
+resource 'DITL' (DITL_PRIVKEY) {
+	{
+		{ 50, 260, 70, 340 },
+		Button { enabled, "OK" };
+
+		{ 10, 70, 30, 340 },
+		StaticText { enabled, "Please locate your private key." };
+	}
+};
+
+resource 'ALRT' (ALRT_PRIVKEY, purgeable) {
+	{ 50, 100, 50+80, 100+350 },
+	DITL_PRIVKEY,
 
 	/* OK means draw default border on first button */
 	{
