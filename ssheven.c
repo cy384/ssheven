@@ -23,9 +23,12 @@ enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
 enum { KEY_LOGIN, PASSWORD_LOGIN } login_type = PASSWORD_LOGIN;
 
+// pascal strings
 char hostname[512] = {0};
 char username[256] = {0};
 char password[256] = {0};
+
+// malloc'd c strings
 char* pubkey_path = NULL;
 char* privkey_path = NULL;
 
@@ -847,7 +850,8 @@ void* read_thread(void* arg)
 		}
 		else
 		{
-			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED) StopAlert(ALRT_PW_FAIL, nil);
+			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED && login_type == PASSWORD_LOGIN) StopAlert(ALRT_PW_FAIL, nil);
+			if (rc == LIBSSH2_ERROR_FILE) StopAlert(ALRT_FILE_FAIL, nil);
 			printf_i("failure: %s\r\n", libssh2_error_string(rc));
 			ok = 0;
 		}

@@ -71,6 +71,10 @@
 #define DLOG_KEY_PASSWORD 138
 #define DITL_KEY_PASSWORD 138
 
+/* alert for key file read failure */
+#define ALRT_FILE_FAIL 139
+#define DITL_FILE_FAIL 139
+
 /* menus */
 #define MBAR_SSHEVEN 128
 #define MENU_APPLE   128
