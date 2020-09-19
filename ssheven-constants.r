@@ -22,9 +22,12 @@
 /* size in bytes for recv and send thread buffers */
 #define SSHEVEN_BUFFER_SIZE 4096
 
-/* terminal type to send over ssh, determines features etc.
- * "vanilla" supports basically nothing, "vt100" basics, "xterm" everything */
-#define SSHEVEN_TERMINAL_TYPE "xterm"
+/* terminal type to send over ssh, determines features etc. some good options:
+ * "vanilla" supports basically nothing
+ * "vt100" just the basics
+ * "xterm" everything
+ * "xterm-mono" everything but color */
+#define SSHEVEN_TERMINAL_TYPE "xterm-mono"
 
 /* dialog for getting connection info */
 #define DLOG_CONNECT 128
