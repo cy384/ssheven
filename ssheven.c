@@ -994,6 +994,48 @@ int safety_checks(void)
 	return 1;
 }
 
+int save_preferences(void)
+{
+	int ok = 1;
+	short foundVRefNum = 0;
+	long foundDirID = 0;
+	FSSpec pref_file;
+	int create_new = 0;
+
+	OSType pref_type = 'SH7p';
+	OSType creator_type = 'SSH7';
+
+	// find the preferences folder on the system disk, create folder if needed
+	OSErr e = FindFolder(kOnSystemDisk, kPreferencesFolderType, kCreateFolder, &foundVRefNum, &foundDirID);
+	if (e != noErr) ok = 0;
+
+	// make an FSSpec for the new file we want to make
+	if (ok)
+	{
+		e = FSMakeFSSpec(foundVRefNum, foundDirID, PREFERENCES_FILENAME, &pref_file);
+		if (e == fnfErr) // file doesn't exist, but is a valid path
+		{
+			create_new = 1;
+		}
+		else if (e != noErr) ok = 0;
+	}
+
+	if (ok && create_new)
+	{
+		e = FSpCreate(&pref_file, creator_type, pref_type, smSystemScript);
+		if (e != noErr) ok = 0;
+	}
+
+	// TODO: actually save anything
+
+	return ok;
+}
+
+void load_preferences(void)
+{
+	// TODO: actually load anything
+}
+
 int main(int argc, char** argv)
 {
 	OSStatus err = noErr;
@@ -1006,6 +1048,8 @@ int main(int argc, char** argv)
 	// "Call the MoreMasters procedure several times at the beginning of your program"
 	MoreMasters();
 	MoreMasters();
+
+	load_preferences();
 
 	// general gui setup
 	InitGraf(&qd.thePort);
@@ -1060,6 +1104,8 @@ int main(int argc, char** argv)
 	EndUpdate(con.win);
 
 	ok = intro_dialog(hostname, username, password);
+
+	if (ok) save_preferences();
 
 	if (!ok) printf_i("Cancelled, not connecting.\r\n");
 

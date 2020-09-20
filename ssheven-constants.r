@@ -32,6 +32,9 @@
  */
 #define SSHEVEN_TERMINAL_TYPE "xterm-16color"
 
+/* name for the preferences file (pascal string) */
+#define PREFERENCES_FILENAME "\pssheven Preferences"
+
 /* application icon set */
 #define SSHEVEN_APPLICATION_ICON 128
 
