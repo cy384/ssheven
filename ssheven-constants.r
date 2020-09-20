@@ -32,6 +32,12 @@
  */
 #define SSHEVEN_TERMINAL_TYPE "xterm-16color"
 
+/* application icon set */
+#define SSHEVEN_APPLICATION_ICON 128
+
+/* preferences/other files icon set */
+#define SSHEVEN_FILE_ICON        129
+
 /* dialog for getting connection info */
 #define DLOG_CONNECT 128
 #define DITL_CONNECT 128
