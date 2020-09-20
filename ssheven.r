@@ -384,15 +384,21 @@ resource 'SSH7' (0, purgeable) {
 };
 
 #include "Finder.r"
-resource 'FREF' (128, purgeable) {
+/* application -> icon relation */
+resource 'FREF' (SSHEVEN_APPLICATION_ICON, purgeable) {
 	'APPL', 0, ""
+};
+
+/* preferences file -> icon relation */
+resource 'FREF' (SSHEVEN_FILE_ICON, purgeable) {
+	'SH7p', 1, ""
 };
 
 resource 'BNDL' (128, purgeable) {
 	'SSH7', 0,
 	{
-		'ICN#', {0, SSHEVEN_APPLICATION_ICON},
-		'FREF', {0, 128}
+		'ICN#', {0, SSHEVEN_APPLICATION_ICON, 1, SSHEVEN_FILE_ICON},
+		'FREF', {0, SSHEVEN_APPLICATION_ICON, 1, SSHEVEN_FILE_ICON}
 	}
 };
 
