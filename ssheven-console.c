@@ -5,6 +5,7 @@
  * See LICENSE file for details
  */
 
+#include "ssheven.h"
 #include "ssheven-console.h"
 
 char key_to_vterm[256] = { VTERM_KEY_NONE };
@@ -69,45 +70,107 @@ void check_cursor(void)
 	}
 }
 
+// convert vterm's ANSI color indexes into Quickdraw colors
+inline int idx2qd(VTermColor c)
+{
+	switch (c.indexed.idx)
+	{
+		case 0:
+			return blackColor;
+		case 1:
+			return redColor;
+		case 2:
+			return greenColor;
+		case 3:
+			return yellowColor;
+		case 4:
+			return blueColor;
+		case 5:
+			return magentaColor;
+		case 6:
+			return cyanColor;
+		case 7:
+			return whiteColor;
+		case 8:
+			return blackColor;
+		case 9:
+			return redColor;
+		case 10:
+			return greenColor;
+		case 11:
+			return yellowColor;
+		case 12:
+			return blueColor;
+		case 13:
+			return magentaColor;
+		case 14:
+			return cyanColor;
+		case 15:
+			return whiteColor;
+		default:
+			return blackColor;
+	}
+}
+
 // closely inspired by the retro68 console library
 void draw_screen(Rect* r)
 {
 	// get the intersection of our console region and the update region
-	Rect bounds = (con.win->portRect);
-	SectRect(r, &bounds, r);
+	//Rect bounds = (con.win->portRect);
+	//SectRect(r, &bounds, r);
 
-	short minRow = (0 > (r->top - bounds.top) / con.cell_height) ? 0 : (r->top - bounds.top) / con.cell_height;
-	short maxRow = (con.size_y < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? con.size_y : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
+	// right now we only call this function to redraw the entire screen
+	// so we don't need this (yet)
+	//short minRow = (0 > (r->top - bounds.top) / con.cell_height) ? 0 : (r->top - bounds.top) / con.cell_height;
+	//short maxRow = (con.size_y < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? con.size_y : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
 
-	short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
-	short maxCol = (con.size_x < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? con.size_x : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
+	//short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
+	//short maxCol = (con.size_x < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? con.size_x : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
 
-	EraseRect(r);
+	short minRow = 0;
+	short maxRow = con.size_y;
+	short minCol = 0;
+	short maxCol = con.size_x;
 
 	// don't clobber font settings
-	short save_font = qd.thePort->txFont;
+	short save_font      = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
+	short save_font_fg   = qd.thePort->fgColor;
+	short save_font_bg   = qd.thePort->bkColor;
+
+	TextFont(kFontIDMonaco);
+	TextSize(9);
+	TextFace(normal);
+	qd.thePort->bkColor = whiteColor;
+	qd.thePort->fgColor = blackColor;
+
+	EraseRect(r);
 
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
 
 	short face = normal;
-	char c;
 	Rect cr;
 
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
-	for(int i = minRow; i < maxRow; i++)
+	for(pos.row = minRow; pos.row < maxRow; pos.row++)
 	{
-		for (int j = minCol; j < maxCol; j++)
+		for (pos.col = minCol; pos.col < maxCol; pos.col++)
 		{
-			pos.row = i;
-			pos.col = j;
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-			c = (char)vtsc->chars[0];
+
+			qd.thePort->fgColor = idx2qd(vtsc->pen.fg);
+			qd.thePort->bkColor = idx2qd(vtsc->pen.bg);
+
+			if (qd.thePort->bkColor != whiteColor)
+			{
+				cr = cell_rect(pos.col, pos.row, *r);
+				EraseRect(&cr);
+			}
 
 			face = normal;
 			if (vtsc->pen.bold) face |= (condense|bold);
@@ -115,12 +178,12 @@ void draw_screen(Rect* r)
 			if (vtsc->pen.underline) face |= underline;
 
 			if (face != normal) TextFace(face);
-			draw_char(j, i, r, c);
+			draw_char(pos.col, pos.row, r, (char)vtsc->chars[0]);
 			if (face != normal) TextFace(normal);
 
 			if (vtsc->pen.reverse)
 			{
-				cr = cell_rect(j,i,con.win->portRect);
+				cr = cell_rect(pos.col, pos.row, *r);
 				InvertRect(&cr);
 			}
 		}
@@ -128,11 +191,7 @@ void draw_screen(Rect* r)
 
 	// do the cursor if needed
 	if (con.cursor_state == 1 &&
-		con.cursor_visible == 1 &&
-		con.cursor_y >= minRow &&
-		con.cursor_y <= maxRow &&
-		con.cursor_x >= minCol &&
-		con.cursor_x <= maxCol)
+		con.cursor_visible == 1)
 	{
 		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
 		InvertRect(&cursor);
@@ -141,6 +200,8 @@ void draw_screen(Rect* r)
 	TextFont(save_font);
 	TextSize(save_font_size);
 	TextFace(save_font_face);
+	qd.thePort->fgColor = save_font_fg;
+	qd.thePort->bkColor = save_font_bg;
 
 	// draw the grow icon in the bottom right corner, but not the scroll bars
 	// yes, this is really awkward
@@ -380,6 +441,14 @@ void console_setup(void)
 	vterm_set_utf8(con.vterm, 0);
 	VTermState* vtermstate = vterm_obtain_state(con.vterm);
 	vterm_state_reset(vtermstate, 1);
+
+	VTermColor fg = { .type = VTERM_COLOR_INDEXED };
+	fg.indexed.idx = 0; // ANSI black
+
+	VTermColor bg  = { .type = VTERM_COLOR_INDEXED };
+	bg.indexed.idx = 7; // ANSI white
+
+	vterm_state_set_default_colors(vtermstate, &fg, &bg);
 
 	vterm_output_set_callback(con.vterm, output_callback, NULL);
 
