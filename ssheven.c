@@ -43,13 +43,13 @@ int save_prefs(void)
 	if (ok)
 	{
 		e = FSMakeFSSpec(foundVRefNum, foundDirID, PREFERENCES_FILENAME, &pref_file);
-		if (e == fnfErr) // file doesn't exist, but is a valid path
-		{
-			// so make the file
-			e = FSpCreate(&pref_file, creator_type, pref_type, smSystemScript);
-			if (e != noErr) ok = 0;
-		}
-		else if (e != noErr) ok = 0;
+
+		// if the file exists, delete it
+		if (e == noErr) FSpDelete(&pref_file);
+
+		// and then make it
+		e = FSpCreate(&pref_file, creator_type, pref_type, smSystemScript);
+		if (e != noErr) ok = 0;
 	}
 
 	// open the file
@@ -80,7 +80,14 @@ int save_prefs(void)
 		snprintf(output_buffer+i, prefs.port[0]+1, "%s", prefs.port+1); i += prefs.port[0];
 		i += snprintf(output_buffer+i, write_length-i, "\n");
 
-		i += snprintf(output_buffer+i, write_length-i, "%s\n%s\n", prefs.privkey_path, prefs.pubkey_path);
+		if (prefs.privkey_path && prefs.privkey_path[0] != '\0')
+		{
+			i += snprintf(output_buffer+i, write_length-i, "%s\n%s\n", prefs.privkey_path, prefs.pubkey_path);
+		}
+		else
+		{
+			i += snprintf(output_buffer+i, write_length-i, "\n\n");
+		}
 
 		// tell it to write all bytes
 		long int bytes = i;
@@ -1129,6 +1136,7 @@ void* read_thread(void* arg)
 		}
 		else
 		{
+			printf_i("failed!\r\n");
 			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED && prefs.auth_type == USE_PASSWORD) StopAlert(ALRT_PW_FAIL, nil);
 			else if (rc == LIBSSH2_ERROR_FILE) StopAlert(ALRT_FILE_FAIL, nil);
 			else if (rc == LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED)
@@ -1145,8 +1153,7 @@ void* read_thread(void* arg)
 		}
 	}
 
-	// if we logged in, save the connection preferences, since we know they're ok
-	if (ok) save_prefs();
+	save_prefs();
 
 	// if we logged in, open and set up the tty
 	if (ok)
