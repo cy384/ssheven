@@ -36,6 +36,8 @@
 #include <vterm.h>
 #include <vterm_keycodes.h>
 
+#include <stdio.h>
+
 // sinful globals
 struct ssheven_console
 {
@@ -76,3 +78,31 @@ extern struct ssheven_ssh_connection ssh_con;
 extern char key_to_vterm[256];
 
 void ssh_write(char* buf, size_t len);
+
+struct preferences
+{
+	int major_version;
+	int minor_version;
+
+	int loaded_from_file;
+
+	// pascal strings
+	char hostname[512]; // of the form: "hostname:portnumber", size is first only
+	char username[256];
+	char password[256];
+	char port[256];
+
+	// malloc'd c strings
+	char* pubkey_path;
+	char* privkey_path;
+
+	const char* terminal_string;
+
+	enum { USE_KEY, USE_PASSWORD } auth_type;
+
+	enum { FASTEST, MONOCHROME, COLOR } display_mode;
+	int fg_color;
+	int bg_color;
+};
+
+extern struct preferences prefs;

@@ -18,19 +18,170 @@
 // sinful globals
 struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 1, NULL, NULL };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
+struct preferences prefs;
 
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
-enum { KEY_LOGIN, PASSWORD_LOGIN } login_type = PASSWORD_LOGIN;
 
-// pascal strings
-char hostname[512] = {0};
-char username[256] = {0};
-char password[256] = {0};
+int save_prefs(void)
+{
+	int ok = 1;
+	short foundVRefNum = 0;
+	long foundDirID = 0;
+	FSSpec pref_file;
+	//int create_new = 0;
+	short prefRefNum = 0;
 
-// malloc'd c strings
-char* pubkey_path = NULL;
-char* privkey_path = NULL;
+	OSType pref_type = 'SH7p';
+	OSType creator_type = 'SSH7';
+
+	// find the preferences folder on the system disk, create folder if needed
+	OSErr e = FindFolder(kOnSystemDisk, kPreferencesFolderType, kCreateFolder, &foundVRefNum, &foundDirID);
+	if (e != noErr) ok = 0;
+
+	// make an FSSpec for the new file we want to make
+	if (ok)
+	{
+		e = FSMakeFSSpec(foundVRefNum, foundDirID, PREFERENCES_FILENAME, &pref_file);
+		if (e == fnfErr) // file doesn't exist, but is a valid path
+		{
+			// so make the file
+			e = FSpCreate(&pref_file, creator_type, pref_type, smSystemScript);
+			if (e != noErr) ok = 0;
+		}
+		else if (e != noErr) ok = 0;
+	}
+
+	// open the file
+	if (ok)
+	{
+		e = FSpOpenDF(&pref_file, fsRdWrPerm, &prefRefNum);
+		if (e != noErr) ok = 0;
+	}
+
+	// write prefs to the file
+	if (ok)
+	{
+		// TODO: choose buffer size more effectively
+		size_t write_length = 8192;
+
+		char* output_buffer = malloc(write_length);
+		memset(output_buffer, 0, write_length);
+
+		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", prefs.major_version, prefs.minor_version);
+		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color);
+
+		snprintf(output_buffer+i, prefs.hostname[0]+1, "%s", prefs.hostname+1); i += prefs.hostname[0];
+		i += snprintf(output_buffer+i, write_length-i, "\n");
+
+		snprintf(output_buffer+i, prefs.username[0]+1, "%s", prefs.username+1); i += prefs.username[0];
+		i += snprintf(output_buffer+i, write_length-i, "\n");
+
+		snprintf(output_buffer+i, prefs.port[0]+1, "%s", prefs.port+1); i += prefs.port[0];
+		i += snprintf(output_buffer+i, write_length-i, "\n");
+
+		i += snprintf(output_buffer+i, write_length-i, "%s\n%s\n", prefs.privkey_path, prefs.pubkey_path);
+
+		// tell it to write all bytes
+		long int bytes = i;
+		e = FSWrite(prefRefNum, &bytes, output_buffer);
+		// FSWrite sets bytes to the actual number of bytes written
+
+		if (e != noErr || (bytes != i)) ok = 0;
+	}
+
+	// close the file
+	if (prefRefNum != 0)
+	{
+		e = FSClose(prefRefNum);
+		if (e != noErr) ok = 0;
+	}
+
+	return ok;
+}
+
+void init_prefs(void)
+{
+	// initialize everything to a safe default
+	prefs.major_version = SSHEVEN_VERSION_MAJOR;
+	prefs.minor_version = SSHEVEN_VERSION_MINOR;
+
+	memset(&(prefs.hostname), 0, 512);
+	memset(&(prefs.username), 0, 256);
+	memset(&(prefs.password), 0, 256);
+	memset(&(prefs.port), 0, 256);
+
+	// default port: 22
+	prefs.port[0] = 2;
+	prefs.port[1] = '2';
+	prefs.port[2] = '2';
+
+	prefs.pubkey_path = "";
+	prefs.privkey_path = "";
+	prefs.terminal_string = SSHEVEN_TERMINAL_TYPE;
+	prefs.auth_type = USE_PASSWORD;
+	prefs.display_mode = COLOR;
+	prefs.fg_color = blackColor;
+	prefs.bg_color = whiteColor;
+
+	prefs.loaded_from_file = 0;
+}
+
+void load_prefs(void)
+{
+	// now try to load preferences from the file
+	short foundVRefNum = 0;
+	long foundDirID = 0;
+	FSSpec pref_file;
+	short prefRefNum = 0;
+
+	// find the preferences folder on the system disk
+	OSErr e = FindFolder(kOnSystemDisk, kPreferencesFolderType, kDontCreateFolder, &foundVRefNum, &foundDirID);
+	if (e != noErr) return;
+
+	// make an FSSpec for the preferences file location and check if it exists
+	// TODO: if I just put PREFERENCES_FILENAME it doesn't work, wtf
+	e = FSMakeFSSpec(foundVRefNum, foundDirID, "\pssheven Preferences", &pref_file);
+
+	if (e == fnfErr) // file not found, nothing to load
+	{
+		return;
+	}
+	else if (e != noErr) return;
+
+	e = FSpOpenDF(&pref_file, fsCurPerm, &prefRefNum);
+	if (e != noErr) return;
+
+	// actually read and parse the file
+	long int buffer_size = 8192;
+	char* buffer = NULL;
+	buffer = malloc(buffer_size);
+	prefs.privkey_path = malloc(2048);
+	prefs.pubkey_path = malloc(2048);
+	prefs.pubkey_path[0] = '\0';
+	prefs.privkey_path[0] = '\0';
+
+	e = FSRead(prefRefNum, &buffer_size, buffer);
+	e = FSClose(prefRefNum);
+
+	// check the version (first two numbers)
+	int items_got = sscanf(buffer, "%d\n%d", &prefs.major_version, &prefs.minor_version);
+	if (items_got != 2) return;
+
+	// only load a prefs file if the saved version number matches ours
+	if ((prefs.major_version == SSHEVEN_VERSION_MAJOR) && (prefs.minor_version == SSHEVEN_VERSION_MINOR))
+	{
+		prefs.loaded_from_file = 1;
+		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
+
+		// add the size for the pascal strings
+		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
+		prefs.username[0] = (unsigned char)strlen(prefs.username+1);
+		prefs.port[0] = (unsigned char)strlen(prefs.port+1);
+	}
+
+	if (buffer) free(buffer);
+}
 
 // borrowed from Retro68 sample code
 // draws the "default" indicator around a button
@@ -470,7 +621,7 @@ int ssh_setup_terminal(void)
 {
 	int rc = 0;
 
-	SSH_CHECK(libssh2_channel_request_pty_ex(ssh_con.channel, SSHEVEN_TERMINAL_TYPE, (strlen(SSHEVEN_TERMINAL_TYPE)), NULL, 0, con.size_x, con.size_y, 0, 0));
+	SSH_CHECK(libssh2_channel_request_pty_ex(ssh_con.channel, prefs.terminal_string, (strlen(prefs.terminal_string)), NULL, 0, con.size_x, con.size_y, 0, 0));
 	SSH_CHECK(libssh2_channel_shell(ssh_con.channel));
 
 	return 1;
@@ -572,8 +723,8 @@ int password_dialog(int dialog_resource)
 
 	// read out of the hidden text box
 	GetDialogItem(dlog, 5, &type, &itemH, &box);
-	GetDialogItemText(itemH, (unsigned char*)password);
-	login_type = PASSWORD_LOGIN;
+	GetDialogItemText(itemH, (unsigned char*)prefs.password);
+	prefs.auth_type = USE_PASSWORD;
 
 	DisposeDialog(dlog);
 
@@ -689,41 +840,47 @@ int key_dialog(void)
 	Handle full_path = NULL;
 	int path_length = 0;
 
-	// get public key path
-	NoteAlert(ALRT_PUBKEY, nil);
-	StandardFileReply pubkey;
-	StandardGetFile(NULL, 0, NULL, &pubkey);
-	FSpPathFromLocation(&pubkey.sfFile, &path_length, &full_path);
-	pubkey_path = malloc(path_length+1);
-	strncpy(pubkey_path, (char*)(*full_path), path_length+1);
-	DisposeHandle(full_path);
+	// if we don't have a saved pubkey path, ask for one
+	if (prefs.pubkey_path == NULL || prefs.pubkey_path[0] == '\0')
+	{
+		NoteAlert(ALRT_PUBKEY, nil);
+		StandardFileReply pubkey;
+		StandardGetFile(NULL, 0, NULL, &pubkey);
+		FSpPathFromLocation(&pubkey.sfFile, &path_length, &full_path);
+		prefs.pubkey_path = malloc(path_length+1);
+		strncpy(prefs.pubkey_path, (char*)(*full_path), path_length+1);
+		DisposeHandle(full_path);
+
+		// if the user hit cancel, 0
+		if (!pubkey.sfGood) return 0;
+	}
 
 	path_length = 0;
 	full_path = NULL;
 
-	// if the user hit cancel, 0
-	if (!pubkey.sfGood) return 0;
+	// if we don't have a saved privkey path, ask for one
+	if (prefs.privkey_path == NULL || prefs.privkey_path[0] == '\0')
+	{
+		NoteAlert(ALRT_PRIVKEY, nil);
+		StandardFileReply privkey;
+		StandardGetFile(NULL, 0, NULL, &privkey);
+		FSpPathFromLocation(&privkey.sfFile, &path_length, &full_path);
+		prefs.privkey_path = malloc(path_length+1);
+		strncpy(prefs.privkey_path, (char*)(*full_path), path_length+1);
+		DisposeHandle(full_path);
 
-	// get private key path
-	NoteAlert(ALRT_PRIVKEY, nil);
-	StandardFileReply privkey;
-	StandardGetFile(NULL, 0, NULL, &privkey);
-	FSpPathFromLocation(&privkey.sfFile, &path_length, &full_path);
-	privkey_path = malloc(path_length+1);
-	strncpy(privkey_path, (char*)(*full_path), path_length+1);
-	DisposeHandle(full_path);
-
-	// if the user hit cancel, 0
-	if (!privkey.sfGood) return 0;
+		// if the user hit cancel, 0
+		if (!privkey.sfGood) return 0;
+	}
 
 	// get the key decryption password
 	if (!password_dialog(DLOG_KEY_PASSWORD)) return 0;
 
-	login_type = KEY_LOGIN;
+	prefs.auth_type = USE_KEY;
 	return 1;
 }
 
-int intro_dialog(char* hostname, char* username, char* password)
+int intro_dialog(void)
 {
 	// modal dialog setup
 	TEInit();
@@ -742,28 +899,41 @@ int intro_dialog(char* hostname, char* username, char* password)
 	GetDialogItem(dlg, 2, &type, &itemH, &box);
 	SetDialogItem(dlg, 2, type, (Handle)NewUserItemUPP(&ButtonFrameProc), &box);
 
-	// get the handles for each of the text boxes
+	// get the handles for each of the text boxes, and load preference data in
 	ControlHandle address_text_box;
 	GetDialogItem(dlg, 4, &type, &itemH, &box);
 	address_text_box = (ControlHandle)itemH;
+	SetDialogItemText((Handle)address_text_box, (ConstStr255Param)prefs.hostname);
 
 	ControlHandle port_text_box;
 	GetDialogItem(dlg, 5, &type, &itemH, &box);
 	port_text_box = (ControlHandle)itemH;
+	SetDialogItemText((Handle)port_text_box, (ConstStr255Param)prefs.port);
 
 	ControlHandle username_text_box;
 	GetDialogItem(dlg, 7, &type, &itemH, &box);
 	username_text_box = (ControlHandle)itemH;
+	SetDialogItemText((Handle)username_text_box, (ConstStr255Param)prefs.username);
 
 	ControlHandle password_radio;
 	GetDialogItem(dlg, 9, &type, &itemH, &box);
 	password_radio = (ControlHandle)itemH;
-	SetControlValue(password_radio, 1);
+	SetControlValue(password_radio, 0);
 
 	ControlHandle key_radio;
 	GetDialogItem(dlg, 10, &type, &itemH, &box);
 	key_radio = (ControlHandle)itemH;
 	SetControlValue(key_radio, 0);
+
+	// recall last-used connection type
+	if (prefs.auth_type == USE_PASSWORD)
+	{
+		SetControlValue(password_radio, 1);
+	}
+	else
+	{
+		SetControlValue(key_radio, 1);
+	}
 
 	// let the modalmanager do everything
 	// stop when the connect button is hit
@@ -783,12 +953,15 @@ int intro_dialog(char* hostname, char* username, char* password)
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
-	GetDialogItemText((Handle)address_text_box, (unsigned char *)hostname);
-	GetDialogItemText((Handle)username_text_box, (unsigned char *)username);
+	GetDialogItemText((Handle)address_text_box, (unsigned char *)prefs.hostname);
+	GetDialogItemText((Handle)username_text_box, (unsigned char *)prefs.username);
 
-	// splice the port number onto the hostname (n.b. they're pascal strings)
-	GetDialogItemText((Handle)port_text_box, (unsigned char *)hostname+hostname[0]+1);
-	hostname[hostname[0]+1] = ':';
+	GetDialogItemText((Handle)port_text_box, (unsigned char *)prefs.hostname+prefs.hostname[0]+1);
+	prefs.hostname[prefs.hostname[0]+1] = ':';
+
+	char* port_start = prefs.hostname+prefs.hostname[0] + 2;
+	prefs.port[0] = strlen(port_start);
+	strncpy(prefs.port+1, port_start, 255);
 
 	int use_password = GetControlValue(password_radio);
 
@@ -823,25 +996,25 @@ void* read_thread(void* arg)
 	}
 
 	// connect and log in
-	ok = init_connection(hostname+1);
+	ok = init_connection(prefs.hostname+1);
 	YieldToAnyThread();
 
 	if (ok)
 	{
 		printf_i("Authenticating... "); YieldToAnyThread();
 
-		if (login_type == PASSWORD_LOGIN)
+		if (prefs.auth_type == USE_PASSWORD)
 		{
-			rc = libssh2_userauth_password(ssh_con.session, username+1, password+1);
+			rc = libssh2_userauth_password(ssh_con.session, prefs.username+1, prefs.password+1);
 		}
 		else
 		{
 			rc = libssh2_userauth_publickey_fromfile_ex(ssh_con.session,
-				username+1,
-				username[0],
-				pubkey_path,
-				privkey_path,
-				password+1);
+				prefs.username+1,
+				prefs.username[0],
+				prefs.pubkey_path,
+				prefs.privkey_path,
+				prefs.password+1);
 		}
 
 		if (rc == LIBSSH2_ERROR_NONE)
@@ -850,12 +1023,19 @@ void* read_thread(void* arg)
 		}
 		else
 		{
-			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED && login_type == PASSWORD_LOGIN) StopAlert(ALRT_PW_FAIL, nil);
-			if (rc == LIBSSH2_ERROR_FILE) StopAlert(ALRT_FILE_FAIL, nil);
-			printf_i("failure: %s\r\n", libssh2_error_string(rc));
+			if (rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED && prefs.auth_type == USE_PASSWORD) StopAlert(ALRT_PW_FAIL, nil);
+			else if (rc == LIBSSH2_ERROR_FILE) StopAlert(ALRT_FILE_FAIL, nil);
+			else if (rc == LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED)
+			{
+				printf_i("Invalid key files!\r\n"); // TODO: have an alert for this
+			}
+			else printf_i("failure: %s\r\n", libssh2_error_string(rc));
 			ok = 0;
 		}
 	}
+
+	// if we logged in, save the connection preferences, since we know they're ok
+	if (ok) save_prefs();
 
 	// if we logged in, open and set up the tty
 	if (ok)
@@ -994,48 +1174,6 @@ int safety_checks(void)
 	return 1;
 }
 
-int save_preferences(void)
-{
-	int ok = 1;
-	short foundVRefNum = 0;
-	long foundDirID = 0;
-	FSSpec pref_file;
-	int create_new = 0;
-
-	OSType pref_type = 'SH7p';
-	OSType creator_type = 'SSH7';
-
-	// find the preferences folder on the system disk, create folder if needed
-	OSErr e = FindFolder(kOnSystemDisk, kPreferencesFolderType, kCreateFolder, &foundVRefNum, &foundDirID);
-	if (e != noErr) ok = 0;
-
-	// make an FSSpec for the new file we want to make
-	if (ok)
-	{
-		e = FSMakeFSSpec(foundVRefNum, foundDirID, PREFERENCES_FILENAME, &pref_file);
-		if (e == fnfErr) // file doesn't exist, but is a valid path
-		{
-			create_new = 1;
-		}
-		else if (e != noErr) ok = 0;
-	}
-
-	if (ok && create_new)
-	{
-		e = FSpCreate(&pref_file, creator_type, pref_type, smSystemScript);
-		if (e != noErr) ok = 0;
-	}
-
-	// TODO: actually save anything
-
-	return ok;
-}
-
-void load_preferences(void)
-{
-	// TODO: actually load anything
-}
-
 int main(int argc, char** argv)
 {
 	OSStatus err = noErr;
@@ -1049,7 +1187,9 @@ int main(int argc, char** argv)
 	MoreMasters();
 	MoreMasters();
 
-	load_preferences();
+	// set default preferences, then load from preferences file if possible
+	init_prefs();
+	load_prefs();
 
 	// general gui setup
 	InitGraf(&qd.thePort);
@@ -1091,6 +1231,15 @@ int main(int argc, char** argv)
 	printf_i("Running in 68k mode.\r\n");
 	#endif
 
+	if (prefs.loaded_from_file)
+	{
+		printf_i("Loaded preferences file.\r\n");
+	}
+	else
+	{
+		printf_i("Could not load from preferences file.\r\n");
+	}
+
 	BeginUpdate(con.win);
 	draw_screen(&(con.win->portRect));
 	EndUpdate(con.win);
@@ -1103,9 +1252,7 @@ int main(int argc, char** argv)
 	draw_screen(&(con.win->portRect));
 	EndUpdate(con.win);
 
-	ok = intro_dialog(hostname, username, password);
-
-	if (ok) save_preferences();
+	ok = intro_dialog();
 
 	if (!ok) printf_i("Cancelled, not connecting.\r\n");
 
@@ -1168,8 +1315,8 @@ int main(int argc, char** argv)
 	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
 	if (ssh_con.send_buffer != NULL) OTFreeMem(ssh_con.send_buffer);
 
-	if (pubkey_path != NULL) free(pubkey_path);
-	if (privkey_path != NULL) free(privkey_path);
+	if (prefs.pubkey_path != NULL && prefs.pubkey_path[0] != '\0') free(prefs.pubkey_path);
+	if (prefs.privkey_path != NULL && prefs.privkey_path[0] != '\0') free(prefs.privkey_path);
 
 	if (con.vterm != NULL) vterm_free(con.vterm);
 

@@ -70,6 +70,23 @@ void check_cursor(void)
 	}
 }
 
+// convert Quickdraw colors into vterm's ANSI color indexes
+int qd2idx(int qdc)
+{
+	switch (qdc)
+	{
+		case blackColor: return 0;
+		case redColor: return 1;
+		case greenColor: return 2;
+		case yellowColor: return 3;
+		case blueColor: return 4;
+		case magentaColor: return 5;
+		case cyanColor: return 6;
+		case whiteColor: return 7;
+		default: return 0;
+	}
+}
+
 // convert vterm's ANSI color indexes into Quickdraw colors
 inline int idx2qd(VTermColor c)
 {
@@ -142,8 +159,8 @@ void draw_screen(Rect* r)
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
-	qd.thePort->bkColor = whiteColor;
-	qd.thePort->fgColor = blackColor;
+	qd.thePort->bkColor = prefs.bg_color;
+	qd.thePort->fgColor = prefs.fg_color;
 
 	EraseRect(r);
 
@@ -443,10 +460,10 @@ void console_setup(void)
 	vterm_state_reset(vtermstate, 1);
 
 	VTermColor fg = { .type = VTERM_COLOR_INDEXED };
-	fg.indexed.idx = 0; // ANSI black
+	fg.indexed.idx = qd2idx(prefs.fg_color);
 
 	VTermColor bg  = { .type = VTERM_COLOR_INDEXED };
-	bg.indexed.idx = 7; // ANSI white
+	bg.indexed.idx = qd2idx(prefs.bg_color);
 
 	vterm_state_set_default_colors(vtermstate, &fg, &bg);
 
