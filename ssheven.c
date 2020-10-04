@@ -368,6 +368,107 @@ void ssh_paste(void)
 	DisposeHandle(buf);
 }
 
+int qd_color_to_menu_item(int qd_color)
+{
+	switch (qd_color)
+	{
+		case blackColor: return 1;
+		case redColor: return 2;
+		case greenColor: return 3;
+		case yellowColor: return 4;
+		case blueColor: return 5;
+		case magentaColor: return 6;
+		case cyanColor: return 7;
+		case whiteColor: return 8;
+		default: return 1;
+	}
+}
+
+int menu_item_to_qd_color(int menu_item)
+{
+	switch (menu_item)
+	{
+		case 1: return blackColor;
+		case 2: return redColor;
+		case 3: return greenColor;
+		case 4: return yellowColor;
+		case 5: return blueColor;
+		case 6: return magentaColor;
+		case 7: return cyanColor;
+		case 8: return whiteColor;
+		default: return 1;
+	}
+}
+
+void preferences_window(void)
+{
+	// modal dialog setup
+	TEInit();
+	InitDialogs(NULL);
+	DialogPtr dlg = GetNewDialog(DLOG_PREFERENCES, 0, (WindowPtr)-1);
+	InitCursor();
+
+	// select all text in dialog item 4 (the hostname one)
+	//SelectDialogItemText(dlg, 4, 0, 32767);
+
+	DialogItemType type;
+	Handle itemH;
+	Rect box;
+
+	// draw default button indicator around the connect button
+	GetDialogItem(dlg, 2, &type, &itemH, &box);
+	SetDialogItem(dlg, 2, type, (Handle)NewUserItemUPP(&ButtonFrameProc), &box);
+
+	// get the handles for each menu, set to current prefs value
+	ControlHandle term_type_menu;
+	GetDialogItem(dlg, 6, &type, &itemH, &box);
+	term_type_menu = (ControlHandle)itemH;
+	SetControlValue(term_type_menu, prefs.display_mode + 1);
+
+	ControlHandle bg_color_menu;
+	GetDialogItem(dlg, 7, &type, &itemH, &box);
+	bg_color_menu = (ControlHandle)itemH;
+	SetControlValue(bg_color_menu, qd_color_to_menu_item(prefs.bg_color));
+
+	ControlHandle fg_color_menu;
+	GetDialogItem(dlg, 8, &type, &itemH, &box);
+	fg_color_menu = (ControlHandle)itemH;
+	SetControlValue(fg_color_menu, qd_color_to_menu_item(prefs.fg_color));
+
+	// let the modalmanager do everything
+	// stop on ok or cancel
+	short item;
+	do {
+		ModalDialog(NULL, &item);
+	} while(item != 1 && item != 9);
+
+	// save if OK'd
+	if (item == 1)
+	{
+		// read menu values into prefs
+		prefs.display_mode = GetControlValue(term_type_menu) - 1;
+
+		// TODO: don't save colors, make it take effect immediately
+		int save_bg = prefs.bg_color;
+		int save_fg = prefs.fg_color;
+
+		prefs.bg_color = menu_item_to_qd_color(GetControlValue(bg_color_menu));
+		prefs.fg_color = menu_item_to_qd_color(GetControlValue(fg_color_menu));
+
+		save_prefs();
+
+		prefs.bg_color = save_bg;
+		prefs.fg_color = save_fg;
+
+		// TODO: make this actually fix all colors in vterm
+		update_console_colors();
+	}
+
+	// clean it up
+	DisposeDialog(dlg);
+	FlushEvents(everyEvent, -1);
+}
+
 // returns 1 if quit selected, else 0
 int process_menu_select(int32_t result)
 {
@@ -391,7 +492,8 @@ int process_menu_select(int32_t result)
 			break;
 
 		case MENU_FILE:
-			if (item == 1) exit = 1;
+			if (item == 1) preferences_window();
+			if (item == 2) exit = 1;
 			break;
 
 		case MENU_EDIT:

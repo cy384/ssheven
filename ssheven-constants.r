@@ -90,10 +90,21 @@
 #define ALRT_FILE_FAIL 139
 #define DITL_FILE_FAIL 139
 
+/* dialog for preferences */
+#define DLOG_PREFERENCES 140
+#define DITL_PREFERENCES 140
+
+/* controls for preferences dialog */
+#define CNTL_PREF_FG_COLOR  128
+#define CNTL_PREF_BG_COLOR  129
+#define CNTL_PREF_TERM_TYPE 130
 /* menus */
-#define MBAR_SSHEVEN 128
-#define MENU_APPLE   128
-#define MENU_FILE    129
-#define MENU_EDIT    130
+#define MBAR_SSHEVEN    128
+
+#define MENU_APPLE     128
+#define MENU_FILE      129
+#define MENU_EDIT      130
+#define MENU_COLOR     131
+#define MENU_TERM_TYPE 132
 
 #endif

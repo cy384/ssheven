@@ -476,3 +476,19 @@ void console_setup(void)
 	setup_key_translation();
 }
 
+// TODO: make this update all the cells with the default colors
+void update_console_colors(void)
+{
+	VTermState* vtermstate = vterm_obtain_state(con.vterm);
+
+	VTermColor fg = { .type = VTERM_COLOR_INDEXED };
+	fg.indexed.idx = qd2idx(prefs.fg_color);
+
+	VTermColor bg  = { .type = VTERM_COLOR_INDEXED };
+	bg.indexed.idx = qd2idx(prefs.bg_color);
+
+	vterm_state_set_default_colors(vtermstate, &fg, &bg);
+
+	InvalRect(&(con.win->portRect));
+}
+
