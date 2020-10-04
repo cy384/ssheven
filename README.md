@@ -4,7 +4,7 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.6.1 ([see github releases](https://github.com/cy384/ssheven/releases)), a functional (but not completely secure) SSH client with color terminal emulation, able to login via key or password.  See roadmap below for upcoming work (i.e., things that aren't done yet).
+Project status: as of 0.7.0 ([see github releases](https://github.com/cy384/ssheven/releases)), a functional (but not completely secure) SSH client with color terminal emulation, able to login via key or password.  See roadmap below for upcoming work (i.e., things that aren't done yet).
 
 ![ssheven screenshot](http://www.cy384.com/media/img/ssheven-0.6.1-screenshot.png)
 
@@ -18,11 +18,6 @@ system requirements
 
 feature/bug-fix roadmap
 -----------------------
-0.7.0
-* preferences dialog with color mode (bright/dark), terminal type (monochrome, color, etc.) options
-* preferences file (save key locations, known hosts/keys, most recent host+port+(key or password choice), color prefs)
-* add check in key dialog to make sure the keys are still in same location, otherwise prompt again
-
 0.8.0
 * check server keys/known hosts
 * improve keycode translation (especially control combos)

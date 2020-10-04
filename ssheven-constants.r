@@ -4,11 +4,11 @@
 #define __SSHEVEN_CONSTANTS_R__
 
 /* so many versions */
-#define SSHEVEN_VERSION             "0.6.0"
-#define SSHEVEN_LONG_VERSION        "0.6.0 prerelease, by cy384"
-#define SSHEVEN_DESCRIPTION         "ssheven 0.6.0 by cy384"
+#define SSHEVEN_VERSION             "0.7.0"
+#define SSHEVEN_LONG_VERSION        "0.7.0 prerelease, by cy384"
+#define SSHEVEN_DESCRIPTION         "ssheven 0.7.0 by cy384"
 #define SSHEVEN_VERSION_MAJOR       0x00
-#define SSHEVEN_VERSION_MINOR       0x60
+#define SSHEVEN_VERSION_MINOR       0x70
 #define SSHEVEN_VERSION_PRERELEASE  0x01
 
 /* options: development, alpha, beta, release */
@@ -32,7 +32,7 @@
 #define SSHEVEN_APPLICATION_ICON 128
 
 /* preferences/other files icon set */
-#define SSHEVEN_FILE_ICON        129
+#define SSHEVEN_FILE_ICON 129
 
 /* dialog for getting connection info */
 #define DLOG_CONNECT 128
@@ -92,7 +92,7 @@
 #define CNTL_PREF_BG_COLOR  129
 #define CNTL_PREF_TERM_TYPE 130
 /* menus */
-#define MBAR_SSHEVEN    128
+#define MBAR_SSHEVEN   128
 
 #define MENU_APPLE     128
 #define MENU_FILE      129
