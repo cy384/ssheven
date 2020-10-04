@@ -23,6 +23,33 @@ struct preferences prefs;
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
 
+void set_terminal_string(void)
+{
+	/*
+	 * terminal type to send over ssh, determines features etc. some good options:
+	 * "vanilla" supports basically nothing
+	 * "vt100" just the basics
+	 * "xterm" everything
+	 * "xterm-mono" everything except color
+	 * "xterm-16color" classic 16 ANSI colors only
+	 */
+	switch (prefs.display_mode)
+	{
+		case FASTEST:
+			prefs.terminal_string = "vt100";
+			break;
+		case MONOCHROME:
+			prefs.terminal_string = "xterm-mono";
+			break;
+		case COLOR:
+			prefs.terminal_string = "xterm-16color";
+			break;
+		default:
+			prefs.terminal_string = SSHEVEN_DEFAULT_TERM_STRING;
+			break;
+	}
+}
+
 int save_prefs(void)
 {
 	int ok = 1;
@@ -125,7 +152,7 @@ void init_prefs(void)
 
 	prefs.pubkey_path = "";
 	prefs.privkey_path = "";
-	prefs.terminal_string = SSHEVEN_TERMINAL_TYPE;
+	prefs.terminal_string = SSHEVEN_DEFAULT_TERM_STRING;
 	prefs.auth_type = USE_PASSWORD;
 	prefs.display_mode = COLOR;
 	prefs.fg_color = blackColor;
@@ -185,6 +212,8 @@ void load_prefs(void)
 		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
 		prefs.username[0] = (unsigned char)strlen(prefs.username+1);
 		prefs.port[0] = (unsigned char)strlen(prefs.port+1);
+
+		set_terminal_string();
 	}
 
 	if (buffer) free(buffer);

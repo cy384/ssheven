@@ -15,6 +15,10 @@ void console_setup(void);
 void draw_char(int x, int y, Rect* r, char c);
 void draw_screen(Rect* r);
 
+void draw_screen_fast(Rect* r);
+void draw_screen_mono(Rect* r);
+void draw_screen_color(Rect* r);
+
 void bump_up_line();
 
 int is_printable(char c);
