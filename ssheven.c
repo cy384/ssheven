@@ -223,6 +223,7 @@ void end_connection(void)
 
 	if (ssh_con.channel)
 	{
+		libssh2_channel_send_eof(ssh_con.channel);
 		libssh2_channel_close(ssh_con.channel);
 		libssh2_channel_free(ssh_con.channel);
 		libssh2_session_disconnect(ssh_con.session, "Normal Shutdown, Thank you for playing");
@@ -1040,6 +1041,7 @@ void* read_thread(void* arg)
 	// if we logged in, open and set up the tty
 	if (ok)
 	{
+		libssh2_channel_handle_extended_data2(ssh_con.channel, LIBSSH2_CHANNEL_EXTENDED_DATA_MERGE);
 		ssh_con.channel = libssh2_channel_open_session(ssh_con.session);
 		ok = ssh_setup_terminal();
 		YieldToAnyThread();
@@ -1056,8 +1058,8 @@ void* read_thread(void* arg)
 	void* menu = GetMenuHandle(MENU_EDIT);
 	EnableItem(menu, 5);
 
-	// process incoming data until we've failed or are asked to EXIT
-	while (read_thread_command == READ && read_thread_state == OPEN)
+	// read until failure, command to EXIT, or remote EOF
+	while (read_thread_command == READ && read_thread_state == OPEN && libssh2_channel_eof(ssh_con.channel) == 0)
 	{
 		if (check_network_events()) ssh_read();
 		YieldToAnyThread();
