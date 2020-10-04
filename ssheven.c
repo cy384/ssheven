@@ -1134,6 +1134,11 @@ void* read_thread(void* arg)
 			else if (rc == LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED)
 			{
 				printf_i("Username/public key combination invalid!\r\n"); // TODO: have an alert for this
+				if (prefs.pubkey_path[0] != '\0' || prefs.privkey_path[0] != '\0')
+				{
+					prefs.pubkey_path[0] = '\0';
+					prefs.privkey_path[0] = '\0';
+				}
 			}
 			else printf_i("unexpected failure: %s\r\n", libssh2_error_string(rc));
 			ok = 0;
