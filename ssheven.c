@@ -715,6 +715,9 @@ int init_connection(char* hostname)
 
 	printf_i("done. (%d ticks)\r\n", TickCount() - s); YieldToAnyThread();
 
+	const char* banner = libssh2_session_banner_get(ssh_con.session);
+	if (banner) printf_i("Server banner: %s\r\n", banner);
+
 	read_thread_state = OPEN;
 
 	return 1;
