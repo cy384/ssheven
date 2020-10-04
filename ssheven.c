@@ -1130,9 +1130,9 @@ void* read_thread(void* arg)
 			else if (rc == LIBSSH2_ERROR_FILE) StopAlert(ALRT_FILE_FAIL, nil);
 			else if (rc == LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED)
 			{
-				printf_i("Invalid key files!\r\n"); // TODO: have an alert for this
+				printf_i("Username/public key combination invalid!\r\n"); // TODO: have an alert for this
 			}
-			else printf_i("failure: %s\r\n", libssh2_error_string(rc));
+			else printf_i("unexpected failure: %s\r\n", libssh2_error_string(rc));
 			ok = 0;
 		}
 	}
