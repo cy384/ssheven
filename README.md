@@ -19,33 +19,37 @@ system requirements
 feature/bug-fix roadmap
 -----------------------
 0.7.0
-* color mode (bright/dark), terminal type (monochrome, color, etc.) options
+* preferences dialog with color mode (bright/dark), terminal type (monochrome, color, etc.) options
 * preferences file (save key locations, known hosts/keys, most recent host+port+(key or password choice), color prefs)
-* check server keys/known hosts/keys
+* add check in key dialog to make sure the keys are still in same location, otherwise prompt again
 
 0.8.0
-* hook scrolling into vterm to reduce redraws
-* saving/loading connection settings as a filetype
-* font face and size options
+* check server keys/known hosts
+* improve keycode translation (especially control combos)
+* hook scrolling into vterm to reduce redraws/blanking
 
 0.9.0
-* clean up libssh2 network ops (write fn, read safety, don't allow send until connected, quit while connected lockup)
-* read Apple HIG and obsessively optimize placement of all GUI elements
-* nicer error presentation for more failure cases
+* clean up libssh2 network ops (write fn, read safety, don't allow send until connected, quit while connected mess)
+* clean up/update versions of libssh and mbedtls (get as close to mainline as possible, revert unecessary changes)
+* build/packaging scripts?
 
 1.0.0 (first "real" release)
-* fix up keycode translation (especially control combos)
-* RNG improvements
-* solve 68k crashes/finicky build issues ([retro68 issue](https://github.com/autc04/Retro68/issues/38))
+* nicer error presentation for more failure cases
+* read Apple HIG and obsessively optimize placement of all GUI elements
+* improve RNG
+* license info in an about box type thing
+* finish and upload papercraft box, floppy sticker artwork, icon/logo svg
 
 ?.?.?
-* scp file transfer
+* solve 68k crashes/finicky build issues ([retro68 issue](https://github.com/autc04/Retro68/issues/38))
 * initial key exchange is too slow for 68030 and 68020 systems (improve `mbedtls_mpi_exp_mod`)
-* console draw speed is slow/flickery (big refactor, try to use an "offscreen graphics world" framebuffer)
+* console draw speed is slow/flickery (maybe try to use an "offscreen graphics world" framebuffer? big refactor)
+* font face and size options
+* scp file transfer
 * text selection + copy
 * more complete color support (will need to use color quickdraw, currently uses an 8-color hack for traditional quickdraw)
-* preference file on OS 9 doesn't have the icon
-* clean up/update versions of libssh and mbedtls
+* preference file sometimes doesn't have the icon (fix up the filetype association etc.)
+* keyboard-interactive authentication
 
 build
 -----
