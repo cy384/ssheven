@@ -215,6 +215,11 @@ void load_prefs(void)
 
 		set_terminal_string();
 	}
+	else
+	{
+		prefs.major_version = SSHEVEN_VERSION_MAJOR;
+		prefs.minor_version = SSHEVEN_VERSION_MINOR;
+	}
 
 	if (buffer) free(buffer);
 }
