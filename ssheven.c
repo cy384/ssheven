@@ -529,7 +529,7 @@ int process_menu_select(int32_t result)
 
 		case MENU_FILE:
 			if (item == 1) preferences_window();
-			if (item == 2) exit = 1;
+			if (item == 3) exit = 1;
 			break;
 
 		case MENU_EDIT:
