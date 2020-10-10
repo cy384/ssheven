@@ -585,6 +585,44 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 	}
 }
 
+int handle_keypress(EventRecord* event)
+{
+	unsigned char c = event->message & charCodeMask;
+
+	// if we have a key and command and it's not autorepeating
+	if (c && (event->modifiers & cmdKey) && event->what != autoKey)
+	{
+		switch (c)
+		{
+			case 'q':
+				return 1;
+				break;
+			case 'v':
+				ssh_paste();
+				break;
+			default:
+				break;
+		}
+	}
+	// if it's just a normal key
+	// note that this is after translation, e.g. shift-f -> 'F', ctrl-a -> 0x01
+	else if (c)
+	{
+		if (key_to_vterm[c] != VTERM_KEY_NONE)
+		{
+			vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
+		}
+		else
+		{
+			if ('\r' == c) c = '\n';
+			ssh_con.send_buffer[0] = c;
+			ssh_write(ssh_con.send_buffer, 1);
+		}
+	}
+
+	return 0;
+}
+
 void event_loop(void)
 {
 	int exit_event_loop = 0;
@@ -612,8 +650,6 @@ void event_loop(void)
 		check_cursor();
 
 		// handle any GUI events
-		unsigned char c = 0;
-
 		switch (event.what)
 		{
 			case updateEvt:
@@ -625,35 +661,7 @@ void event_loop(void)
 
 			case keyDown:
 			case autoKey: // autokey means we're repeating a held down key event
-				c = event.message & charCodeMask;
-				// if we have a key and command and it's not autorepeating
-				if (c && (event.modifiers & cmdKey) && event.what != autoKey)
-				{
-					switch(c)
-					{
-						case 'q':
-							exit_event_loop = 1;
-							break;
-						case 'v':
-							ssh_paste();
-							break;
-						default:
-							break;
-					}
-				}
-				else if (c)
-				{
-					if (key_to_vterm[c] != VTERM_KEY_NONE)
-					{
-						vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
-					}
-					else
-					{
-						if ('\r' == c) c = '\n';
-						ssh_con.send_buffer[0] = c;
-						ssh_write(ssh_con.send_buffer, 1);
-					}
-				}
+				exit_event_loop = handle_keypress(&event);
 				break;
 
 			case mouseDown:

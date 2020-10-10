@@ -95,6 +95,7 @@
 #define CNTL_PREF_FG_COLOR  128
 #define CNTL_PREF_BG_COLOR  129
 #define CNTL_PREF_TERM_TYPE 130
+
 /* menus */
 #define MBAR_SSHEVEN   128
 
