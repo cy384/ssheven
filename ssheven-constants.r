@@ -87,6 +87,10 @@
 #define DLOG_PREFERENCES 140
 #define DITL_PREFERENCES 140
 
+/* dialog for known host check */
+#define DLOG_NEW_HOST 141
+#define DITL_NEW_HOST 141
+
 /* controls for preferences dialog */
 #define CNTL_PREF_FG_COLOR  128
 #define CNTL_PREF_BG_COLOR  129

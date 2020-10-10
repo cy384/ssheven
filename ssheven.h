@@ -38,6 +38,8 @@
 
 #include <stdio.h>
 
+#include <mbedtls/base64.h>
+
 // sinful globals
 struct ssheven_console
 {

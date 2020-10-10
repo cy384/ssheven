@@ -339,6 +339,36 @@ resource 'ALRT' (ALRT_FILE_FAIL, purgeable) {
 	alertPositionMainScreen
 };
 
+resource 'DLOG' (DLOG_NEW_HOST) {
+	{ 40, 30, 140, 480 },
+	dBoxProc,
+	visible,
+	noGoAway,
+	0,
+	DLOG_NEW_HOST,
+	"",
+	centerMainScreen
+};
+
+resource 'DITL' (DITL_NEW_HOST) {
+	{
+		{ 70, 355, 90, 440 },
+		Button { enabled, "Reject" };
+
+		{ 70, 355, 90, 440 },
+		UserItem { enabled };
+
+		{ 10, 70, 30, 400 },
+		StaticText { enabled, "Unrecognized server public key.  SHA256 hash:" };
+
+		{ 30, 70, 50, 440 },
+		StaticText { enabled, "01234567890123456789012345678901234567890123456789" };
+
+		{ 70, 10, 90, 90 },
+		Button { enabled, "Accept" };
+	}
+};
+
 resource 'SIZE' (-1) {
 	reserved,
 	acceptSuspendResumeEvents,

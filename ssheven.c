@@ -1131,6 +1131,181 @@ int intro_dialog(void)
 	}
 }
 
+// returns base64 sha256 hash of key as a malloc'd pascal string
+char* host_hash(void)
+{
+	size_t length = 0;
+	char* human_readable = malloc(64);
+	memset(human_readable, 0, 64);
+	const char* host_key_hash = NULL;
+
+	host_key_hash = libssh2_hostkey_hash(ssh_con.session, LIBSSH2_HOSTKEY_HASH_SHA256);
+	mbedtls_base64_encode((unsigned char*)human_readable+1, 64, &length, (unsigned const char*)host_key_hash, 32);
+
+	human_readable[0] = (unsigned char)length;
+
+	return human_readable;
+}
+
+char* known_hosts_full_path(int* found)
+{
+	int ok = 1;
+	short foundVRefNum = 0;
+	long foundDirID = 0;
+	FSSpec known_hosts_file;
+	*found = 0;
+
+	OSType pref_type = 'SH7p';
+	OSType creator_type = 'SSH7';
+
+	// find the preferences folder on the system disk, create folder if needed
+	OSErr e = FindFolder(kOnSystemDisk, kPreferencesFolderType, kCreateFolder, &foundVRefNum, &foundDirID);
+	if (e != noErr) ok = 0;
+
+	// make an FSSpec for the new file we want to make
+	if (ok)
+	{
+		e = FSMakeFSSpec(foundVRefNum, foundDirID, "\pknown_hosts", &known_hosts_file);
+
+		// if the file exists, we found it else make an empty one
+		if (e == noErr) *found = 1;
+		else if (e == noErr) e = FSpCreate(&known_hosts_file, creator_type, pref_type, smSystemScript);
+
+		if (e != noErr) ok = 0;
+	}
+
+	Handle full_path_handle;
+	int path_length;
+
+	FSpPathFromLocation(&known_hosts_file, &path_length, &full_path_handle);
+	char* full_path = malloc(path_length+1);
+	strncpy(full_path, (char*)(*full_path_handle), path_length+1);
+	DisposeHandle(full_path_handle);
+
+	return full_path;
+}
+
+int known_hosts(void)
+{
+	int safe_to_connect = 1;
+	int recognized_key = 0;
+	int known_hosts_file_exists = 0;
+
+	char* known_hosts_file_path = known_hosts_full_path(&known_hosts_file_exists);
+	char* hash_string = NULL;
+
+	size_t key_len = 0;
+	int key_type = 0;
+	const char* host_key = libssh2_session_hostkey(ssh_con.session, &key_len, &key_type);
+
+	LIBSSH2_KNOWNHOSTS* known_hosts = libssh2_knownhost_init(ssh_con.session);
+
+	if (known_hosts_file_exists)
+	{
+		// load known hosts file
+		printf_i("Loading known hosts... ");
+
+		int e = libssh2_knownhost_readfile(known_hosts, known_hosts_file_path, LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+		if (e >= 0)
+		{
+			printf_i("got %d.\r\n", e);
+		}
+		else
+		{
+			printf_i("failed: %s\r\n", libssh2_error_string(e));
+		}
+	}
+	else
+	{
+		printf_i("No known hosts file found.\r\n");
+	}
+
+	if (safe_to_connect)
+	{
+		// our hostname string includes the port, I guess that's okay?
+		int e = libssh2_knownhost_check(known_hosts, prefs.hostname+1, host_key, key_len, key_type, NULL);
+		switch (e)
+		{
+			case LIBSSH2_KNOWNHOST_CHECK_FAILURE:
+				printf_i("Failed to check known hosts against server public key!\r\n");
+				safe_to_connect = 0;
+				break;
+			case LIBSSH2_KNOWNHOST_CHECK_NOTFOUND:
+				printf_i("No matching host found.\r\n");
+				break;
+			case LIBSSH2_KNOWNHOST_CHECK_MATCH:
+				printf_i("Host and key match found in known hosts.\r\n");
+				recognized_key = 1;
+				break;
+			case LIBSSH2_KNOWNHOST_CHECK_MISMATCH:
+				printf_i("Host found in known hosts but key doesn't match!\r\n");
+				safe_to_connect = 0;
+				break;
+		}
+	}
+
+	hash_string = host_hash();
+	//printf_i("Host key hash (SHA256): %s\r\n", hash_string+1);
+
+	// ask the user to confirm if we're seeing a new host+key combo
+	if (safe_to_connect && !recognized_key)
+	{
+		// ask the user if the key is OK
+		DialogPtr dlg = GetNewDialog(DLOG_NEW_HOST, 0, (WindowPtr)-1);
+
+		DialogItemType type;
+		Handle itemH;
+		Rect box;
+
+		// draw default button indicator around the connect button
+		GetDialogItem(dlg, 2, &type, &itemH, &box);
+		SetDialogItem(dlg, 2, type, (Handle)NewUserItemUPP(&ButtonFrameProc), &box);
+
+		// write the hash string into the dialog window
+		ControlHandle hash_text_box;
+		GetDialogItem(dlg, 4, &type, &itemH, &box);
+		hash_text_box = (ControlHandle)itemH;
+		SetDialogItemText((Handle)hash_text_box, (ConstStr255Param)hash_string);
+
+		// let the modalmanager do everything
+		// stop on reject or accept
+		short item;
+		do {
+			ModalDialog(NULL, &item);
+		} while(item != 1 && item != 5);
+
+		// reject if user hit reject
+		if (item == 1)
+		{
+			safe_to_connect = 0;
+		}
+
+		DisposeDialog(dlg);
+		FlushEvents(everyEvent, -1);
+
+		printf_i("Saving host and key... ");
+
+		int save_type = (key_type == LIBSSH2_HOSTKEY_TYPE_RSA ? LIBSSH2_KNOWNHOST_KEY_SSHRSA : LIBSSH2_KNOWNHOST_KEY_SSHDSS);
+		int e = libssh2_knownhost_addc(known_hosts, prefs.hostname+1, NULL, host_key, key_len, NULL, 0, LIBSSH2_KNOWNHOST_TYPE_PLAIN | LIBSSH2_KNOWNHOST_KEYENC_RAW | save_type, NULL);
+
+		if (e != 0) printf_i("failed to add to known hosts: %s\r\n", libssh2_error_string(e));
+		else
+		{
+			e = libssh2_knownhost_writefile(known_hosts, known_hosts_file_path, LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+			if (e != 0) printf_i("failed to save known hosts file: %s\r\n", libssh2_error_string(e));
+			else printf_i("done.\r\n");
+		}
+	}
+
+	free(hash_string);
+
+	libssh2_knownhost_free(known_hosts);
+
+	free(known_hosts_file_path);
+
+	return safe_to_connect;
+}
+
 void* read_thread(void* arg)
 {
 	int ok = 1;
@@ -1144,10 +1319,18 @@ void* read_thread(void* arg)
 		return 0;
 	}
 
-	// connect and log in
+	// connect
 	ok = init_connection(prefs.hostname+1);
 	YieldToAnyThread();
 
+	// check the server pub key vs. known hosts
+	if (ok)
+	{
+		ok = known_hosts();
+		if (!ok) printf_i("Rejected server public key!\r\n");
+	}
+
+	// actually log in
 	if (ok)
 	{
 		printf_i("Authenticating... "); YieldToAnyThread();
