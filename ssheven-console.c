@@ -181,11 +181,10 @@ void draw_screen_color(Rect* r)
 	qd.thePort->bkColor = prefs.bg_color;
 	qd.thePort->fgColor = prefs.fg_color;
 
-	EraseRect(r);
-
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
+	TextMode(srcOr);
 
 	short face = normal;
 	Rect cr;
@@ -202,11 +201,8 @@ void draw_screen_color(Rect* r)
 			qd.thePort->fgColor = idx2qd(vtsc->pen.fg);
 			qd.thePort->bkColor = idx2qd(vtsc->pen.bg);
 
-			if (qd.thePort->bkColor != whiteColor)
-			{
-				cr = cell_rect(pos.col, pos.row, *r);
-				EraseRect(&cr);
-			}
+			cr = cell_rect(pos.col, pos.row, *r);
+			EraseRect(&cr);
 
 			face = normal;
 			if (vtsc->pen.bold) face |= (condense|bold);
@@ -219,7 +215,6 @@ void draw_screen_color(Rect* r)
 
 			if (vtsc->pen.reverse)
 			{
-				cr = cell_rect(pos.col, pos.row, *r);
 				InvertRect(&cr);
 			}
 		}
@@ -274,6 +269,7 @@ void draw_screen_fast(Rect* r)
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
+	TextMode(srcOr);
 
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
@@ -322,11 +318,10 @@ void draw_screen_mono(Rect* r)
 	qd.thePort->bkColor = prefs.bg_color;
 	qd.thePort->fgColor = prefs.fg_color;
 
-	EraseRect(r);
-
 	TextFont(kFontIDMonaco);
 	TextSize(9);
 	TextFace(normal);
+	TextMode(srcOr);
 
 	short face = normal;
 	Rect cr;
@@ -338,6 +333,8 @@ void draw_screen_mono(Rect* r)
 	{
 		for (pos.col = minCol; pos.col < maxCol; pos.col++)
 		{
+			cr = cell_rect(pos.col, pos.row, *r);
+
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
 
 			face = normal;
@@ -346,12 +343,12 @@ void draw_screen_mono(Rect* r)
 			if (vtsc->pen.underline) face |= underline;
 
 			if (face != normal) TextFace(face);
+			EraseRect(&cr);
 			draw_char(pos.col, pos.row, r, (char)vtsc->chars[0]);
 			if (face != normal) TextFace(normal);
 
 			if (vtsc->pen.reverse)
 			{
-				cr = cell_rect(pos.col, pos.row, *r);
 				InvertRect(&cr);
 			}
 		}
