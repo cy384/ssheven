@@ -614,7 +614,7 @@ void event_loop(void)
 		// handle any GUI events
 		unsigned char c = 0;
 
-		switch(event.what)
+		switch (event.what)
 		{
 			case updateEvt:
 				eventWin = (WindowPtr)event.message;
@@ -691,6 +691,8 @@ void event_loop(void)
 				}
 				break;
 		}
+
+		YieldToAnyThread();
 	} while (!exit_event_loop);
 }
 
