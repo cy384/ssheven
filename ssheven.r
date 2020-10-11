@@ -340,7 +340,7 @@ resource 'ALRT' (ALRT_FILE_FAIL, purgeable) {
 };
 
 resource 'DLOG' (DLOG_NEW_HOST) {
-	{ 40, 30, 140, 480 },
+	{ 40, 30, 40+100, 30+390 },
 	dBoxProc,
 	visible,
 	noGoAway,
@@ -352,16 +352,16 @@ resource 'DLOG' (DLOG_NEW_HOST) {
 
 resource 'DITL' (DITL_NEW_HOST) {
 	{
-		{ 70, 355, 90, 440 },
+		{ 70, 300, 70+20, 300+80 },
 		Button { enabled, "Reject" };
 
-		{ 70, 355, 90, 440 },
+		{ 70, 300, 70+20, 300+80 },
 		UserItem { enabled };
 
-		{ 10, 70, 30, 400 },
+		{ 10, 20, 10+20, 20+320 },
 		StaticText { enabled, "Unrecognized server public key.  SHA256 hash:" };
 
-		{ 30, 70, 50, 440 },
+		{ 30, 20, 30+20, 20+360 },
 		StaticText { enabled, "01234567890123456789012345678901234567890123456789" };
 
 		{ 70, 10, 90, 90 },
