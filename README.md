@@ -4,7 +4,7 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.7.0 ([see github releases](https://github.com/cy384/ssheven/releases)), a functional (but not completely secure) SSH client with color terminal emulation, able to login via key or password.  See roadmap below for upcoming work (i.e., things that aren't done yet).
+Project status: as of 0.8.0 ([see github releases](https://github.com/cy384/ssheven/releases)), a functional (but not completely secure) SSH client with color terminal emulation, able to login via key or password.  See roadmap below for upcoming work (i.e., things that aren't done yet).
 
 ![ssheven screenshot](http://www.cy384.com/media/img/ssheven-0.6.1-screenshot.png)
 
@@ -18,15 +18,11 @@ system requirements
 
 feature/bug-fix roadmap
 -----------------------
-0.8.0
-* check server keys/known hosts
-* improve keycode translation (especially control combos)
-* hook scrolling into vterm to reduce redraws/blanking
-
 0.9.0
 * clean up libssh2 network ops (write fn, read safety, don't allow send until connected, quit while connected mess)
 * clean up/update versions of libssh and mbedtls (get as close to mainline as possible, revert unecessary changes)
-* build/packaging scripts?
+* build/packaging scripts
+* general ssheven code cleanup
 
 1.0.0 (first "real" release)
 * nicer error presentation for more failure cases
@@ -38,13 +34,16 @@ feature/bug-fix roadmap
 ?.?.?
 * solve 68k crashes/finicky build issues ([retro68 issue](https://github.com/autc04/Retro68/issues/38))
 * initial key exchange is too slow for 68030 and 68020 systems (improve `mbedtls_mpi_exp_mod`)
-* console draw speed is slow/flickery (maybe try to use an "offscreen graphics world" framebuffer? big refactor)
+* input latency seems kinda high? related to draw speed/frequency? (maybe try to use an "offscreen graphics world" framebuffer? big refactor)
+* receiving a large amount of data at once causes a freakout and breaks the SSH connection
 * font face and size options
 * scp file transfer
 * text selection + copy
 * more complete color support (will need to use color quickdraw, currently uses an 8-color hack for traditional quickdraw)
 * preference file sometimes doesn't have the icon (fix up the filetype association etc.)
 * keyboard-interactive authentication
+* hook scrolling into vterm to reduce redraws/blanking
+* check all keycode translation (control combo weirdness?)
 
 build
 -----
