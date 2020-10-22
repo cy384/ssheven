@@ -1045,9 +1045,6 @@ int intro_dialog(void)
 	DialogPtr dlg = GetNewDialog(DLOG_CONNECT, 0, (WindowPtr)-1);
 	InitCursor();
 
-	// select all text in dialog item 4 (the hostname one)
-	SelectDialogItemText(dlg, 4, 0, 32767);
-
 	DialogItemType type;
 	Handle itemH;
 	Rect box;
@@ -1061,6 +1058,9 @@ int intro_dialog(void)
 	GetDialogItem(dlg, 4, &type, &itemH, &box);
 	address_text_box = (ControlHandle)itemH;
 	SetDialogItemText((Handle)address_text_box, (ConstStr255Param)prefs.hostname);
+
+	// select all text in hostname dialog item
+	SelectDialogItemText(dlg, 4, 0, 32767);
 
 	ControlHandle port_text_box;
 	GetDialogItem(dlg, 5, &type, &itemH, &box);
