@@ -248,6 +248,7 @@ void ssh_read(void)
 	if (rc <= 0)
 	{
 		printf_i("channel read error: %s\r\n", libssh2_error_string(rc));
+		read_thread_command = EXIT;
 	}
 
 	while (rc > 0)
