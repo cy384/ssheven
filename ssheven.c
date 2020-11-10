@@ -827,15 +827,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 					*itemHit = 6;
 					return true;
 				}
-				break;
-
-			case kLeftArrowCharCode:
-			case kRightArrowCharCode:
-			case kUpArrowCharCode:
-			case kDownArrowCharCode:
-			case kHomeCharCode:
-			case kEndCharCode:
-				return false; // don't handle them
+				// fall through in case of a plain '.' !!!!
 
 			default: // TODO: this is dumb and assumes everything else is a valid text character
 				selStart = (**((DialogPeek)dlog)->textH).selStart; // Get the selection in the visible item
@@ -847,6 +839,14 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 					event->message = 0xa5; // Replace with character to use (the bullet)
 				DialogSelect(event, &evtDlog, itemHit); // Put in fake character
 				return true;
+
+			case kLeftArrowCharCode:
+			case kRightArrowCharCode:
+			case kUpArrowCharCode:
+			case kDownArrowCharCode:
+			case kHomeCharCode:
+			case kEndCharCode:
+				return false; // don't handle them
 		}
 	}
 
