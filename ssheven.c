@@ -23,6 +23,11 @@ struct preferences prefs;
 enum { WAIT, READ, EXIT } read_thread_command = WAIT;
 enum { UNINTIALIZED, OPEN, CLEANUP, DONE } read_thread_state = UNINTIALIZED;
 
+// TODO: put this somewhere else
+// contains a mapping of apple virtual keycode to ascii control code
+// currently only for A-Z
+const uint8_t virtual_keycode_to_control_ascii[255] = {1, 19, 4, 6, 8, 7, 26, 24, 3, 22, 255, 2, 17, 23, 5, 18, 25, 20, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 15, 21, 255, 9, 16, 255, 12, 10, 255, 11, 255, 255, 255, 255, 14, 13, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+
 void set_terminal_string(void)
 {
 	/*
@@ -590,8 +595,9 @@ int handle_keypress(EventRecord* event)
 {
 	unsigned char c = event->message & charCodeMask;
 
-	// if we have a key and command and it's not autorepeating
-	if (c && (event->modifiers & cmdKey) && event->what != autoKey)
+
+	// if we have a key and command, and it's not autorepeating
+	if (c && event->what != autoKey && event->modifiers & cmdKey)
 	{
 		switch (c)
 		{
@@ -605,8 +611,20 @@ int handle_keypress(EventRecord* event)
 				break;
 		}
 	}
+	// if we have a key and control, and it's not autorepeating
+	else if (c && event->what != autoKey && event->modifiers & controlKey)
+	{
+		// check if we know a control code translation for that key
+		uint8_t control_code = virtual_keycode_to_control_ascii[((event->message & keyCodeMask)>>8)];
+
+		if (control_code != 255)
+		{
+			ssh_con.send_buffer[0] = control_code;
+			ssh_write(ssh_con.send_buffer, 1);
+		}
+	}
 	// if it's just a normal key
-	// note that this is after translation, e.g. shift-f -> 'F', ctrl-a -> 0x01
+	// note that this is after translation, e.g. shift-f -> 'F'
 	else if (c)
 	{
 		if (key_to_vterm[c] != VTERM_KEY_NONE)
@@ -615,7 +633,6 @@ int handle_keypress(EventRecord* event)
 		}
 		else
 		{
-			if ('\r' == c) c = '\n';
 			ssh_con.send_buffer[0] = c;
 			ssh_write(ssh_con.send_buffer, 1);
 		}
