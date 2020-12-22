@@ -149,6 +149,15 @@ void draw_screen(Rect* r)
 	}
 }
 
+// p is in window local coordinates
+void mouse_click(Point p, bool click)
+{
+	int row = p.v / con.cell_height;
+	int col = p.h / con.cell_width;
+	vterm_mouse_move(con.vterm, row, col, VTERM_MOD_NONE);
+	vterm_mouse_button(con.vterm, 1, click, VTERM_MOD_NONE);
+}
+
 void draw_screen_color(Rect* r)
 {
 	// get the intersection of our console region and the update region

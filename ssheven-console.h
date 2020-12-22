@@ -38,4 +38,6 @@ Rect cell_rect(int x, int y, Rect bounds);
 void toggle_cursor(void);
 void check_cursor(void);
 
+void mouse_click(Point p, bool click);
+
 void update_console_colors(void);

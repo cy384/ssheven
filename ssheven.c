@@ -646,6 +646,7 @@ void event_loop(void)
 	int exit_event_loop = 0;
 	EventRecord event;
 	WindowPtr eventWin;
+	Point local_mouse_position;
 
 	// maximum length of time to sleep (in ticks)
 	// GetCaretTime gets the number of ticks between system caret on/off time
@@ -713,8 +714,14 @@ void event_loop(void)
 						break;
 
 					case inContent:
+						GetMouse(&local_mouse_position);
+						mouse_click(local_mouse_position, true);
 						break;
 				}
+				break;
+			case mouseUp:
+				GetMouse(&local_mouse_position);
+				mouse_click(local_mouse_position, false);
 				break;
 		}
 
