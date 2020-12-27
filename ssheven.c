@@ -852,7 +852,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 					*itemHit = 6;
 					return true;
 				}
-				// fall through in case of a plain '.' !!!!
+				__attribute__ ((fallthrough)); // fall through in case of a plain '.'
 
 			default: // TODO: this is dumb and assumes everything else is a valid text character
 				selStart = (**((DialogPeek)dlog)->textH).selStart; // Get the selection in the visible item
@@ -1272,6 +1272,10 @@ int known_hosts(void)
 				break;
 			case LIBSSH2_KNOWNHOST_CHECK_MISMATCH:
 				printf_i("Host found in known hosts but key doesn't match!\r\n");
+				safe_to_connect = 0;
+				break;
+			default:
+				printf_i("Unexpected error while checking known-hosts: %d\r\n", e);
 				safe_to_connect = 0;
 				break;
 		}
