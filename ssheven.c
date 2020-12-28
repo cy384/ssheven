@@ -817,8 +817,6 @@ int init_connection(char* hostname)
 	const char* banner = libssh2_session_banner_get(ssh_con.session);
 	if (banner) printf_i("Server banner: %s\r\n", banner);
 
-	read_thread_state = OPEN;
-
 	return 1;
 }
 
@@ -828,6 +826,8 @@ int ssh_setup_terminal(void)
 
 	SSH_CHECK(libssh2_channel_request_pty_ex(ssh_con.channel, prefs.terminal_string, (strlen(prefs.terminal_string)), NULL, 0, con.size_x, con.size_y, 0, 0));
 	SSH_CHECK(libssh2_channel_shell(ssh_con.channel));
+
+	read_thread_state = OPEN;
 
 	return 1;
 }
