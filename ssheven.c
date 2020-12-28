@@ -101,7 +101,7 @@ int save_prefs(void)
 		memset(output_buffer, 0, write_length);
 
 		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", prefs.major_version, prefs.minor_version);
-		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color);
+		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.mouse_mode);
 
 		snprintf(output_buffer+i, prefs.hostname[0]+1, "%s", prefs.hostname+1); i += prefs.hostname[0];
 		i += snprintf(output_buffer+i, write_length-i, "\n");
@@ -163,6 +163,8 @@ void init_prefs(void)
 	prefs.fg_color = blackColor;
 	prefs.bg_color = whiteColor;
 
+	prefs.mouse_mode = CLICK_SEND;
+
 	prefs.loaded_from_file = 0;
 }
 
@@ -211,7 +213,7 @@ void load_prefs(void)
 	if ((prefs.major_version == SSHEVEN_VERSION_MAJOR) && (prefs.minor_version == SSHEVEN_VERSION_MINOR))
 	{
 		prefs.loaded_from_file = 1;
-		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
+		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, (int*)&prefs.mouse_mode, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
 
 		// add the size for the pascal strings
 		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
@@ -482,12 +484,31 @@ void preferences_window(void)
 	fg_color_menu = (ControlHandle)itemH;
 	SetControlValue(fg_color_menu, qd_color_to_menu_item(prefs.fg_color));
 
+	// get handle and set mouse mode checkbox
+	ControlHandle mouse_checkbox;
+	GetDialogItem(dlg, 9, &type, &itemH, &box);
+	mouse_checkbox = (ControlHandle)itemH;
+	if (prefs.mouse_mode == CLICK_SEND)
+	{
+		SetControlValue(mouse_checkbox, 1);
+	}
+	else
+	{
+		SetControlValue(mouse_checkbox, 0);
+	}
+
 	// let the modalmanager do everything
 	// stop on ok or cancel
 	short item;
 	do {
 		ModalDialog(NULL, &item);
-	} while(item != 1 && item != 9);
+
+		// flip the mouse checkbox if clicked
+		if (item == 9)
+		{
+			SetControlValue(mouse_checkbox, !GetControlValue(mouse_checkbox));
+		}
+	} while(item != 1 && item != 10);
 
 	// save if OK'd
 	if (item == 1)
@@ -501,6 +522,8 @@ void preferences_window(void)
 
 		prefs.bg_color = menu_item_to_qd_color(GetControlValue(bg_color_menu));
 		prefs.fg_color = menu_item_to_qd_color(GetControlValue(fg_color_menu));
+
+		prefs.mouse_mode = GetControlValue(mouse_checkbox) ? CLICK_SEND : CLICK_SELECT;
 
 		save_prefs();
 

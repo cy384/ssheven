@@ -105,6 +105,8 @@ struct preferences
 	enum { FASTEST, MONOCHROME, COLOR } display_mode;
 	int fg_color;
 	int bg_color;
+
+	enum { CLICK_SEND, CLICK_SELECT } mouse_mode;
 };
 
 extern struct preferences prefs;

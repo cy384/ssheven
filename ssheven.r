@@ -541,6 +541,9 @@ resource 'DITL' (DITL_PREFERENCES) {
 		{ 70, 150, 89, 300 },
 		Control { enabled, CNTL_PREF_FG_COLOR };
 
+		{ 95, 150, 112, 290 },
+		CheckBox { enabled, "Send mouse clicks" };
+
 		{ 115, 10, 135, 90 },
 		Button { enabled, "Cancel" };
 
