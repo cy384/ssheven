@@ -10,7 +10,7 @@ Project status: as of 0.8.0 ([see github releases](https://github.com/cy384/sshe
 
 system requirements
 -------------------
-* CPU: Any PPC processor, or at least a 25 MHz 68040/68LC040.  Presently, all 68030/68020 CPUs are too slow.
+* CPU: Any PPC processor, or at least a 25 MHz 68040/68LC040.  Presently, all 68030 and 68020 CPUs are too slow.
 * RAM: 2MB.
 * Disk space: 1MB for the fat binary.
 * System 7.5 or later, earlier System 7 versions might be possible with the Thread Manager extension installed.
@@ -21,29 +21,30 @@ feature/bug-fix roadmap
 0.9.0
 * clean up libssh2 network ops (write fn, read safety, don't allow send until connected, quit while connected mess)
 * clean up/update versions of libssh and mbedtls (get as close to mainline as possible, revert unecessary changes)
+* clean up preferences loading/saving, include key stuff, `known_hosts` reset option
 * build/packaging scripts
 * general ssheven code cleanup
+* text selection + copy
 
 1.0.0 (first "real" release)
+* improve RNG
 * nicer error presentation for more failure cases
 * read Apple HIG and obsessively optimize placement of all GUI elements
-* improve RNG
 * license info in an about box type thing
 * finish and upload papercraft box, floppy sticker artwork, icon/logo svg
 
-?.?.?
-* solve 68k crashes/finicky build issues ([retro68 issue](https://github.com/autc04/Retro68/issues/38))
-* initial key exchange is too slow for 68030 and 68020 systems (improve `mbedtls_mpi_exp_mod`)
-* input latency seems kinda high? related to draw speed/frequency? (maybe try to use an "offscreen graphics world" framebuffer? big refactor)
-* receiving a large amount of data at once causes a freakout and breaks the SSH connection
+known bugs
+* initial key exchange is too slow for 68030 and 68020 systems (improve `mbedtls_mpi_exp_mod` and maybe the assembly BN code?)
+* input latency feels high? related to draw speed/frequency? (maybe try to use an "offscreen graphics world" framebuffer? big refactor)
+* receiving a large amount of data breaks the channel (e.g. `cat /dev/zero`)
+* preference file loading has issues, especially with the key paths
+* hook scrolling into vterm to reduce redraws/blanking
+
+possible upcoming features
 * font face and size options
 * scp file transfer
-* text selection + copy
 * more complete color support (will need to use color quickdraw, currently uses an 8-color hack for traditional quickdraw)
-* preference file sometimes doesn't have the icon (fix up the filetype association etc.)
 * keyboard-interactive authentication
-* hook scrolling into vterm to reduce redraws/blanking
-* check all keycode translation (control combo weirdness?)
 
 build
 -----
