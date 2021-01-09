@@ -1,11 +1,14 @@
 /* 
  * ssheven
  * 
- * Copyright (c) 2020 by cy384 <cy384@cy384.com>
+ * Copyright (c) 2021 by cy384 <cy384@cy384.com>
  * See LICENSE file for details
  */
 
-/* handy debugging string conversions */
+#include <OpenTransport.h>
+#include <OpenTptInternet.h>
+
+#include <libssh2.h>
 
 /* convert libssh2 errors into strings */
 const char* libssh2_error_string(int i)

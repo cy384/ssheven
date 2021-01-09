@@ -7,6 +7,11 @@
 
 #include "ssheven.h"
 #include "ssheven-console.h"
+#include "ssheven-net.h"
+
+#include <string.h>
+
+#include <Sound.h>
 
 char key_to_vterm[256] = { VTERM_KEY_NONE };
 
@@ -45,6 +50,19 @@ void setup_key_translation(void)
 	//key_to_vterm[0] = VTERM_KEY_KP_DIVIDE;
 	//key_to_vterm[0] = VTERM_KEY_KP_ENTER;
 	//key_to_vterm[0] = VTERM_KEY_KP_EQUAL;
+}
+
+Rect cell_rect(int x, int y, Rect bounds)
+{
+	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
+		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
+
+	return r;
+}
+
+void print_string(const char* c)
+{
+	vterm_input_write(con.vterm, c, strlen(c));
 }
 
 inline void draw_char(int x, int y, Rect* r, char c)
@@ -126,26 +144,6 @@ inline int idx2qd(VTermColor c)
 			return whiteColor;
 		default:
 			return blackColor;
-	}
-}
-
-// closely inspired by the retro68 console library
-void draw_screen(Rect* r)
-{
-	switch (prefs.display_mode)
-	{
-		case FASTEST:
-			draw_screen_fast(r);
-			break;
-		case MONOCHROME:
-			draw_screen_mono(r);
-			break;
-		case COLOR:
-			draw_screen_color(r);
-			break;
-		default:
-			draw_screen_color(r);
-			break;
 	}
 }
 
@@ -398,6 +396,25 @@ void draw_screen_mono(Rect* r)
 	con.win->clipRgn = old;
 }
 
+void draw_screen(Rect* r)
+{
+	switch (prefs.display_mode)
+	{
+		case FASTEST:
+			draw_screen_fast(r);
+			break;
+		case MONOCHROME:
+			draw_screen_mono(r);
+			break;
+		case COLOR:
+			draw_screen_color(r);
+			break;
+		default:
+			draw_screen_color(r);
+			break;
+	}
+}
+
 void ruler(Rect* r)
 {
 	char itoc[] = {'0','1','2','3','4','5','6','7','8','9'};
@@ -443,11 +460,6 @@ void print_int(int d)
 	print_string(buffer+i+1-negative);
 }
 
-void print_string(const char* c)
-{
-	vterm_input_write(con.vterm, c, strlen(c));
-}
-
 void printf_i(const char* str, ...)
 {
 	va_list args;
@@ -486,15 +498,6 @@ void printf_i(const char* str, ...)
 	va_end(args);
 }
 
-void set_window_title(WindowPtr w, const char* c_name)
-{
-	Str255 pascal_name;
-	strncpy((char *) &pascal_name[1], c_name, 254);
-	pascal_name[0] = strlen(c_name);
-
-	SetWTitle(w, pascal_name);
-}
-
 int bell(void* user)
 {
 	SysBeep(30);
@@ -515,14 +518,6 @@ int movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user)
 	con.cursor_y = pos.row;
 
 	return 1;
-}
-
-Rect cell_rect(int x, int y, Rect bounds)
-{
-	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
-		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
-
-	return r;
 }
 
 int damage(VTermRect rect, void *user)

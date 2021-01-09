@@ -7,35 +7,14 @@
 
 #pragma once
 
-#include "ssheven.h"
-#include <string.h>
+#include "MacTypes.h"
 
 void console_setup(void);
 
-void draw_char(int x, int y, Rect* r, char c);
 void draw_screen(Rect* r);
-
-void draw_screen_fast(Rect* r);
-void draw_screen_mono(Rect* r);
-void draw_screen_color(Rect* r);
-
-void bump_up_line();
-
-int is_printable(char c);
-
-void print_char(char c);
-void print_string(const char* c);
-void print_int(int d);
 
 void printf_i(const char* c, ...);
 
-void set_window_title(WindowPtr w, const char* c_name);
-
-void ruler(Rect* r);
-
-Rect cell_rect(int x, int y, Rect bounds);
-
-void toggle_cursor(void);
 void check_cursor(void);
 
 void mouse_click(Point p, bool click);

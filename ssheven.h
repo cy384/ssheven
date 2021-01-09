@@ -7,38 +7,17 @@
 
 #pragma once
 
-// open transport
 #include <OpenTransport.h>
 #include <OpenTptInternet.h>
-
-// mac os stuff
-#include <Threads.h>
-#include <MacMemory.h>
-#include <Quickdraw.h>
-#include <Fonts.h>
-#include <Windows.h>
-#include <Sound.h>
-#include <Gestalt.h>
-#include <Devices.h>
-#include <Scrap.h>
-#include <Controls.h>
-#include <ControlDefinitions.h>
 #include <StandardFile.h>
 #include <Folders.h>
 
-// libssh2
 #include <libssh2.h>
 
-// ssheven constants
-#include "ssheven-constants.r"
-
-// libvterm
 #include <vterm.h>
 #include <vterm_keycodes.h>
 
-#include <stdio.h>
-
-#include <mbedtls/base64.h>
+#include "ssheven-constants.r"
 
 // sinful globals
 struct ssheven_console
@@ -77,10 +56,6 @@ struct ssheven_ssh_connection
 
 extern struct ssheven_ssh_connection ssh_con;
 
-extern char key_to_vterm[256];
-
-void ssh_write(char* buf, size_t len);
-
 struct preferences
 {
 	int major_version;
@@ -110,3 +85,18 @@ struct preferences
 };
 
 extern struct preferences prefs;
+
+extern char key_to_vterm[256];
+
+enum THREAD_COMMAND { WAIT, READ, EXIT };
+enum THREAD_STATE { UNINTIALIZED, OPEN, CLEANUP, DONE };
+
+extern enum THREAD_COMMAND read_thread_command;
+extern enum THREAD_STATE read_thread_state;
+
+int save_prefs(void);
+void set_window_title(WindowPtr w, const char* c_name);
+
+OSErr FSpPathFromLocation(FSSpec* spec, int* length, Handle* fullPath);
+
+pascal void ButtonFrameProc(DialogRef dlg, DialogItemIndex itemNo);
