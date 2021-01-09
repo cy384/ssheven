@@ -618,7 +618,6 @@ int handle_keypress(EventRecord* event)
 {
 	unsigned char c = event->message & charCodeMask;
 
-
 	// if we have a key and command, and it's not autorepeating
 	if (c && event->what != autoKey && event->modifiers & cmdKey)
 	{
@@ -752,6 +751,66 @@ void event_loop(void)
 	} while (!exit_event_loop);
 }
 
+#include <errno.h>
+ssize_t network_recv_callback(libssh2_socket_t sock, void *buffer,
+               size_t length, int flags, void **abstract)
+{
+	OTResult ret = kOTNoDataErr;
+	OTFlags ot_flags = 0;
+
+	if (length == 0) return 0;
+
+	// in non-blocking mode, returns instantly always
+	ret = OTRcv(ssh_con.endpoint, buffer, length, &ot_flags);
+
+	// if we got bytes, return them
+	if (ret >= 0) return ret;
+
+	// if no data, let other threads run, then tell caller to call again
+	if (ret == kOTNoDataErr && read_thread_command != EXIT)
+	{
+		YieldToAnyThread();
+		return -EAGAIN;
+	}
+
+	// if we got anything other than data or nothing, return an error
+	if (ret != kOTNoDataErr) return -1;
+
+	return -1;
+}
+
+ssize_t network_send_callback(libssh2_socket_t sock, const void *buffer,
+               size_t length, int flags, void **abstract)
+{
+    int ret = -1;
+
+    ret = OTSnd(ssh_con.endpoint, (void*) buffer, length, 0);
+
+    // TODO FIXME handle cases better, i.e. translate error cases
+    if (ret == kOTLookErr)
+    {
+        OTResult lookresult = OTLook(ssh_con.endpoint);
+        //printf("kOTLookErr, reason: %ld\n", lookresult);
+
+        switch (lookresult)
+        {
+            default:
+               //printf("what?\n");
+               ret = -1;
+               break;
+        }
+    }
+
+    return (ssize_t) ret;
+}
+
+void ssh_end_msg_callback(LIBSSH2_SESSION* session, int reason, const char *message,
+           int message_len, const char *language, int language_len,
+           void **abstract)
+{
+	printf_i("got a disconnect msg\r\n");
+}
+
 int init_connection(char* hostname)
 {
 	int rc;
@@ -808,9 +867,14 @@ int init_connection(char* hostname)
 	}
 	printf_i("done.\r\n"); YieldToAnyThread();
 
+	// register callbacks
+	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_SEND, network_send_callback);
+	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_RECV, network_recv_callback);
+	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_DISCONNECT, network_recv_callback);
+
 	long s = TickCount();
 	printf_i("Beginning SSH session handshake... "); YieldToAnyThread();
-	SSH_CHECK(libssh2_session_handshake(ssh_con.session, ssh_con.endpoint));
+	SSH_CHECK(libssh2_session_handshake(ssh_con.session, 0));
 
 	printf_i("done. (%d ticks)\r\n", TickCount() - s); YieldToAnyThread();
 
