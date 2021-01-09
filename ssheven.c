@@ -1255,8 +1255,8 @@ int intro_dialog(void)
 char* host_hash(void)
 {
 	size_t length = 0;
-	char* human_readable = malloc(64);
-	memset(human_readable, 0, 64);
+	char* human_readable = malloc(66);
+	memset(human_readable, 0, 66);
 	const char* host_key_hash = NULL;
 
 	host_key_hash = libssh2_hostkey_hash(ssh_con.session, LIBSSH2_HOSTKEY_HASH_SHA256);
@@ -1342,8 +1342,11 @@ int known_hosts(void)
 
 	if (safe_to_connect)
 	{
-		// our hostname string includes the port, I guess that's okay?
-		int e = libssh2_knownhost_check(known_hosts, prefs.hostname+1, host_key, key_len, key_type, NULL);
+		// hostnames need to be either plain or of the format "[host]:port"
+		prefs.hostname[prefs.hostname[0]+1] = '\0';
+		int e = libssh2_knownhost_check(known_hosts, prefs.hostname+1, host_key, key_len, LIBSSH2_KNOWNHOST_TYPE_PLAIN | LIBSSH2_KNOWNHOST_KEYENC_RAW, NULL);
+		prefs.hostname[prefs.hostname[0]+1] = ':';
+
 		switch (e)
 		{
 			case LIBSSH2_KNOWNHOST_CHECK_FAILURE:
@@ -1409,8 +1412,41 @@ int known_hosts(void)
 
 		printf_i("Saving host and key... ");
 
-		int save_type = (key_type == LIBSSH2_HOSTKEY_TYPE_RSA ? LIBSSH2_KNOWNHOST_KEY_SSHRSA : LIBSSH2_KNOWNHOST_KEY_SSHDSS);
-		int e = libssh2_knownhost_addc(known_hosts, prefs.hostname+1, NULL, host_key, key_len, NULL, 0, LIBSSH2_KNOWNHOST_TYPE_PLAIN | LIBSSH2_KNOWNHOST_KEYENC_RAW | save_type, NULL);
+		int save_type = 0;
+		save_type |= LIBSSH2_KNOWNHOST_TYPE_PLAIN;
+		save_type |= LIBSSH2_KNOWNHOST_KEYENC_RAW;
+
+		switch (key_type)
+		{
+			default:
+				__attribute__ ((fallthrough));
+			case LIBSSH2_HOSTKEY_TYPE_UNKNOWN:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_UNKNOWN;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_RSA:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_SSHRSA;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_DSS:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_SSHDSS;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_ECDSA_256;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_ECDSA_384;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_ECDSA_521;
+				break;
+			case LIBSSH2_HOSTKEY_TYPE_ED25519:
+				save_type |= LIBSSH2_KNOWNHOST_KEY_ED25519;
+				break;
+		}
+
+		// hostnames need to be either plain or of the format "[host]:port"
+		prefs.hostname[prefs.hostname[0]+1] = '\0';
+		int e = libssh2_knownhost_addc(known_hosts, prefs.hostname+1, NULL, host_key, key_len, NULL, 0, save_type, NULL);
+		prefs.hostname[prefs.hostname[0]+1] = ':';
 
 		if (e != 0) printf_i("failed to add to known hosts: %s\r\n", libssh2_error_string(e));
 		else
