@@ -1129,12 +1129,12 @@ int main(int argc, char** argv)
 		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|\r\n";
 
 	printf_i(logo);
-	printf_i("by cy384, version " SSHEVEN_VERSION "\r\n");
+	printf_i("by cy384, version " SSHEVEN_VERSION ", running in ");
 
 	#if defined(__ppc__)
-	printf_i("Running in PPC mode.\r\n");
+	printf_i("PPC mode.\r\n");
 	#else
-	printf_i("Running in 68k mode.\r\n");
+	printf_i("68k mode.\r\n");
 	#endif
 
 	BeginUpdate(con.win);
