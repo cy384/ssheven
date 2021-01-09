@@ -19,15 +19,13 @@ system requirements
 feature/bug-fix roadmap
 -----------------------
 0.9.0
-* clean up libssh2 network ops (write fn, read safety, don't allow send until connected, quit while connected mess)
-* clean up/update versions of libssh and mbedtls (get as close to mainline as possible, revert unecessary changes)
+* clean up network ops (write fn, read safety, don't allow send until connected, quit while connected mess)
 * clean up preferences loading/saving, include key stuff, `known_hosts` reset option
 * build/packaging scripts
 * general ssheven code cleanup
 * text selection + copy
 
 1.0.0 (first "real" release)
-* improve RNG
 * nicer error presentation for more failure cases
 * read Apple HIG and obsessively optimize placement of all GUI elements
 * license info in an about box type thing
