@@ -163,7 +163,7 @@ void init_prefs(void)
 	prefs.fg_color = blackColor;
 	prefs.bg_color = whiteColor;
 
-	prefs.mouse_mode = CLICK_SEND;
+	prefs.mouse_mode = CLICK_SELECT;
 
 	prefs.loaded_from_file = 0;
 }
