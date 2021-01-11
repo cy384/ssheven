@@ -37,6 +37,8 @@ struct ssheven_console
 	long int last_cursor_blink;
 	int cursor_visible;
 
+	enum { CLICK_SEND, CLICK_SELECT } mouse_mode;
+
 	VTerm* vterm;
 	VTermScreen* vts;
 };
@@ -80,8 +82,6 @@ struct preferences
 	enum { FASTEST, MONOCHROME, COLOR } display_mode;
 	int fg_color;
 	int bg_color;
-
-	enum { CLICK_SEND, CLICK_SELECT } mouse_mode;
 };
 
 extern struct preferences prefs;

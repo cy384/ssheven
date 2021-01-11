@@ -4,11 +4,11 @@
 #define __SSHEVEN_CONSTANTS_R__
 
 /* so many versions */
-#define SSHEVEN_VERSION             "0.8.4"
-#define SSHEVEN_LONG_VERSION        "0.8.4 prerelease, by cy384"
-#define SSHEVEN_DESCRIPTION         "ssheven 0.8.4 by cy384"
+#define SSHEVEN_VERSION             "0.8.5"
+#define SSHEVEN_LONG_VERSION        "0.8.5 prerelease, by cy384"
+#define SSHEVEN_DESCRIPTION         "ssheven 0.8.5 by cy384"
 #define SSHEVEN_VERSION_MAJOR       0x00
-#define SSHEVEN_VERSION_MINOR       0x84
+#define SSHEVEN_VERSION_MINOR       0x85
 #define SSHEVEN_VERSION_PRERELEASE  0x01
 
 /* options: development, alpha, beta, release */

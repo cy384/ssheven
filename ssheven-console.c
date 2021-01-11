@@ -13,6 +13,8 @@
 
 #include <Sound.h>
 
+#include <vterm.h>
+
 char key_to_vterm[256] = { VTERM_KEY_NONE };
 
 void setup_key_translation(void)
@@ -150,14 +152,14 @@ inline int idx2qd(VTermColor c)
 // p is in window local coordinates
 void mouse_click(Point p, bool click)
 {
-	if (prefs.mouse_mode == CLICK_SEND)
+	if (con.mouse_mode == CLICK_SEND)
 	{
 		int row = p.v / con.cell_height;
 		int col = p.h / con.cell_width;
 		vterm_mouse_move(con.vterm, row, col, VTERM_MOD_NONE);
 		vterm_mouse_button(con.vterm, 1, click, VTERM_MOD_NONE);
 	}
-	else if (prefs.mouse_mode == CLICK_SELECT)
+	else if (con.mouse_mode == CLICK_SELECT)
 	{
 		// TODO: implement text selection
 	}
@@ -545,6 +547,9 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 		case VTERM_PROP_REVERSE: //bool
 		case VTERM_PROP_CURSORSHAPE: // number
 		case VTERM_PROP_MOUSE: // number
+			// record whether or not the terminal wants mouse clicks
+			con.mouse_mode = (val->number | VTERM_MOUSE_WANT_CLICK) ? CLICK_SEND : CLICK_SELECT;
+			return 1;
 		case VTERM_PROP_CURSORBLINK: // bool
 		case VTERM_PROP_ALTSCREEN: // bool
 		default:
