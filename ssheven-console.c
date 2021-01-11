@@ -543,15 +543,15 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 		case VTERM_PROP_CURSORVISIBLE: // bool
 			con.cursor_visible = val->boolean;
 			return 1;
-		case VTERM_PROP_ICONNAME: // string
-		case VTERM_PROP_REVERSE: //bool
-		case VTERM_PROP_CURSORSHAPE: // number
 		case VTERM_PROP_MOUSE: // number
 			// record whether or not the terminal wants mouse clicks
 			con.mouse_mode = (val->number | VTERM_MOUSE_WANT_CLICK) ? CLICK_SEND : CLICK_SELECT;
 			return 1;
-		case VTERM_PROP_CURSORBLINK: // bool
 		case VTERM_PROP_ALTSCREEN: // bool
+		case VTERM_PROP_ICONNAME: // string
+		case VTERM_PROP_REVERSE: //bool
+		case VTERM_PROP_CURSORSHAPE: // number
+		case VTERM_PROP_CURSORBLINK: // bool
 		default:
 			break;
 	}
