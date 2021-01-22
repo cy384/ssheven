@@ -545,7 +545,7 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 			return 1;
 		case VTERM_PROP_MOUSE: // number
 			// record whether or not the terminal wants mouse clicks
-			con.mouse_mode = (val->number | VTERM_MOUSE_WANT_CLICK) ? CLICK_SEND : CLICK_SELECT;
+			con.mouse_mode = (val->number == VTERM_PROP_MOUSE_CLICK) ? CLICK_SEND : CLICK_SELECT;
 			return 1;
 		case VTERM_PROP_ALTSCREEN: // bool
 		case VTERM_PROP_ICONNAME: // string
