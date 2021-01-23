@@ -441,6 +441,8 @@ int process_menu_select(int32_t result)
 
 void resize_con_window(WindowPtr eventWin, EventRecord event)
 {
+	clear_selection();
+
 	// TODO: put this somewhere else
 	// limits on window size
 	// top = min vertical

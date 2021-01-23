@@ -22,3 +22,5 @@ void mouse_click(Point p, int click);
 void update_console_colors(void);
 
 size_t get_selection(char** selection);
+
+void clear_selection(void);
