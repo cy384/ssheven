@@ -59,9 +59,6 @@ void set_terminal_string(void)
 	switch (prefs.display_mode)
 	{
 		case FASTEST:
-			prefs.terminal_string = "vt100";
-			break;
-		case MONOCHROME:
 			prefs.terminal_string = "xterm-mono";
 			break;
 		case COLOR:

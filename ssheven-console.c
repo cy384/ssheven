@@ -421,6 +421,8 @@ void draw_screen_fast(Rect* r)
 	VTermPos pos = {.row = 0, .col = 0};
 
 	char row_text[con.size_x];
+	char row_invert[con.size_x];
+	Rect cr;
 
 	for(pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
@@ -428,86 +430,25 @@ void draw_screen_fast(Rect* r)
 		{
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
 			row_text[pos.col] = (char)vtsc->chars[0];
+			if (row_text[pos.col] == '\0') row_text[pos.col] = ' ';
+			row_invert[pos.col] = vtsc->pen.reverse;
 		}
 
 		MoveTo(r->left + 2, r->top + ((pos.row+1) * con.cell_height) - 2);
 		DrawText(row_text, 0, con.size_x);
-	}
 
-	// do the cursor if needed
-	if (con.cursor_state == 1 &&
-		con.cursor_visible == 1)
-	{
-		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
-		InvertRect(&cursor);
-	}
-
-	TextFont(save_font);
-	TextSize(save_font_size);
-	TextFace(save_font_face);
-	qd.thePort->fgColor = save_font_fg;
-	qd.thePort->bkColor = save_font_bg;
-}
-
-void draw_screen_mono(Rect* r)
-{
-	short minRow = 0;
-	short maxRow = con.size_y;
-	short minCol = 0;
-	short maxCol = con.size_x;
-
-	// don't clobber font settings
-	short save_font      = qd.thePort->txFont;
-	short save_font_size = qd.thePort->txSize;
-	short save_font_face = qd.thePort->txFace;
-	short save_font_fg   = qd.thePort->fgColor;
-	short save_font_bg   = qd.thePort->bkColor;
-
-	TextFont(kFontIDMonaco);
-	TextSize(9);
-	TextFace(normal);
-	qd.thePort->bkColor = prefs.bg_color;
-	qd.thePort->fgColor = prefs.fg_color;
-
-	TextFont(kFontIDMonaco);
-	TextSize(9);
-	TextFace(normal);
-	TextMode(srcOr);
-
-	short face = normal;
-	Rect cr;
-
-	ScreenCell* vtsc = NULL;
-	VTermPos pos = {.row = 0, .col = 0};
-
-	for(pos.row = minRow; pos.row < maxRow; pos.row++)
-	{
-		for (pos.col = minCol; pos.col < maxCol; pos.col++)
+		for (int i = 0; i < con.size_x; i++)
 		{
-			cr = cell_rect(pos.col, pos.row, *r);
-
-			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-
-			face = normal;
-			if (vtsc->pen.bold) face |= (condense|bold);
-			if (vtsc->pen.italic) face |= (condense|italic);
-			if (vtsc->pen.underline) face |= underline;
-
-			if (face != normal) TextFace(face);
-			EraseRect(&cr);
-			draw_char(pos.col, pos.row, r, (char)vtsc->chars[0]);
-			if (face != normal) TextFace(normal);
-
-			if (vtsc->pen.reverse)
+			if (row_invert[i])
 			{
+				cr = cell_rect(i, pos.row, con.win->portRect);
 				InvertRect(&cr);
 			}
 		}
 	}
 
 	// do the cursor if needed
-	if (con.cursor_state == 1 &&
-		con.cursor_visible == 1)
+	if (con.cursor_state == 1 && con.cursor_visible == 1)
 	{
 		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
 		InvertRect(&cursor);
@@ -518,19 +459,6 @@ void draw_screen_mono(Rect* r)
 	TextFace(save_font_face);
 	qd.thePort->fgColor = save_font_fg;
 	qd.thePort->bkColor = save_font_bg;
-
-	// draw the grow icon in the bottom right corner, but not the scroll bars
-	// yes, this is really awkward
-	MacRegion bottom_right_corner = { 10, con.win->portRect};
-	MacRegion* brc = &bottom_right_corner;
-	MacRegion** old = con.win->clipRgn;
-
-	bottom_right_corner.rgnBBox.top = bottom_right_corner.rgnBBox.bottom - 15;
-	bottom_right_corner.rgnBBox.left = bottom_right_corner.rgnBBox.right - 15;
-
-	con.win->clipRgn = &brc;
-	DrawGrowIcon(con.win);
-	con.win->clipRgn = old;
 }
 
 void draw_screen(Rect* r)
@@ -539,9 +467,6 @@ void draw_screen(Rect* r)
 	{
 		case FASTEST:
 			draw_screen_fast(r);
-			break;
-		case MONOCHROME:
-			draw_screen_mono(r);
 			break;
 		case COLOR:
 			draw_screen_color(r);

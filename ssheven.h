@@ -87,7 +87,7 @@ struct preferences
 
 	enum { USE_KEY, USE_PASSWORD } auth_type;
 
-	enum { FASTEST, MONOCHROME, COLOR } display_mode;
+	enum { FASTEST, COLOR } display_mode;
 	int fg_color;
 	int bg_color;
 };
