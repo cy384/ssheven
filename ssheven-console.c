@@ -333,6 +333,7 @@ void draw_screen_color(Rect* r)
 		select_end = MAX(a,b);
 	}
 
+	char c = 0;
 	for(pos.row = minRow; pos.row < maxRow; pos.row++)
 	{
 		for (pos.col = minCol; pos.col < maxCol; pos.col++)
@@ -351,7 +352,9 @@ void draw_screen_color(Rect* r)
 			if (vtsc->pen.underline) face |= underline;
 
 			if (face != normal) TextFace(face);
-			draw_char(pos.col, pos.row, r, (char)vtsc->chars[0]);
+			c = (char)vtsc->chars[0];
+			if (c == '\0') c = ' ';
+			draw_char(pos.col, pos.row, r, c);
 			if (face != normal) TextFace(normal);
 
 			if (vtsc->pen.reverse)
