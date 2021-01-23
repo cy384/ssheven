@@ -37,6 +37,14 @@ struct ssheven_console
 	long int last_cursor_blink;
 	int cursor_visible;
 
+	int select_start_x;
+	int select_start_y;
+
+	int select_end_x;
+	int select_end_y;
+
+	int mouse_state; // 1 for down, 0 for up
+
 	enum { CLICK_SEND, CLICK_SELECT } mouse_mode;
 
 	VTerm* vterm;

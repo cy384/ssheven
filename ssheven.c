@@ -25,7 +25,7 @@
 #include <stdio.h>
 
 // sinful globals
-struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 1, CLICK_SELECT, NULL, NULL };
+struct ssheven_console con = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, CLICK_SELECT, NULL, NULL };
 struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NULL, NULL };
 struct preferences prefs;
 
@@ -288,6 +288,19 @@ void ssh_paste(void)
 	DisposeHandle(buf);
 }
 
+void ssh_copy(void)
+{
+	OSErr e = ZeroScrap();
+	if (e != noErr) printf_i("Failed to ZeroScrap!");
+
+	char* selection = NULL;
+	size_t len = get_selection(&selection);
+	if (selection == NULL || len == 0) return;
+
+	e = PutScrap(len, 'TEXT', selection);
+	if (e != noErr) printf_i("Failed to PutScrap!");
+}
+
 int qd_color_to_menu_item(int qd_color)
 {
 	switch (qd_color)
@@ -417,6 +430,7 @@ int process_menu_select(int32_t result)
 			break;
 
 		case MENU_EDIT:
+			if (item == 4) ssh_copy();
 			if (item == 5) ssh_paste();
 			break;
 
@@ -478,6 +492,9 @@ int handle_keypress(EventRecord* event)
 				break;
 			case 'v':
 				ssh_paste();
+				break;
+			case 'c':
+				ssh_copy();
 				break;
 			default:
 				break;
@@ -1088,7 +1105,7 @@ int main(int argc, char** argv)
 	menu = GetMenuHandle(MENU_EDIT);
 	DisableItem(menu, 1);
 	DisableItem(menu, 3);
-	DisableItem(menu, 4);
+	//DisableItem(menu, 4);
 	DisableItem(menu, 5);
 	DisableItem(menu, 6);
 	DisableItem(menu, 7);

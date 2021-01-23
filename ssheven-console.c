@@ -15,6 +15,9 @@
 
 #include <vterm.h>
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 char key_to_vterm[256] = { VTERM_KEY_NONE };
 
 void setup_key_translation(void)
@@ -149,9 +152,41 @@ inline int idx2qd(VTermColor c)
 	}
 }
 
-// p is in window local coordinates
-void mouse_click(Point p, bool click)
+void point_to_cell(Point p, int* x, int* y)
 {
+	*x = p.h / con.cell_width;
+	*y = p.v / con.cell_height;
+
+	if (*x > con.size_x) *x = con.size_x;
+	if (*y > con.size_y) *y = con.size_y;
+}
+
+void damage_selection(void)
+{
+	// damage all rows that have part of the selection (TODO make this better)
+	Rect topleft = cell_rect(0, MIN(con.select_start_y, con.select_end_y), (con.win->portRect));
+	Rect bottomright = cell_rect(con.size_x, MAX(con.select_start_y, con.select_end_y), (con.win->portRect));
+
+	UnionRect(&topleft, &bottomright, &topleft);
+	InvalRect(&topleft);
+}
+
+void update_selection_end(void)
+{
+	Point new_mouse;
+	GetMouse(&new_mouse);
+	point_to_cell(new_mouse, &con.select_end_x, &con.select_end_y);
+
+	damage_selection();
+}
+
+// p is in window local coordinates
+void mouse_click(Point p, int click)
+{
+	static Point last_click;
+
+	con.mouse_state = click;
+
 	if (con.mouse_mode == CLICK_SEND)
 	{
 		int row = p.v / con.cell_height;
@@ -161,8 +196,72 @@ void mouse_click(Point p, bool click)
 	}
 	else if (con.mouse_mode == CLICK_SELECT)
 	{
-		// TODO: implement text selection
+		if (click)
+		{
+			// damage the old selection so it gets wiped from the screen
+			damage_selection();
+
+			last_click = p;
+			point_to_cell(p, &con.select_start_x, &con.select_start_y);
+			point_to_cell(p, &con.select_end_x, &con.select_end_y);
+			update_selection_end();
+		}
+		else
+		{
+			int a, b, c, d;
+			point_to_cell(last_click, &a, &b);
+			point_to_cell(p, &c, &d);
+
+			// if in same cell, cancel the selection
+			if (a == c && b == d)
+			{
+				con.select_start_x = -1;
+				con.select_start_y = -1;
+				con.select_end_x = -1;
+				con.select_end_y = -1;
+			}
+
+			update_selection_end();
+		}
 	}
+}
+
+size_t get_selection(char** selection)
+{
+	int a = con.select_start_x + con.select_start_y * con.size_x;
+	int b = con.select_end_x + con.select_end_y * con.size_x;
+
+	ssize_t len = MAX(a,b) - MIN(a,b) + 1;
+	if (len == 0)
+	{
+		*selection = NULL;
+		return 0;
+	}
+
+	char* output = malloc(sizeof(char) * len);
+
+	int start_row = MIN(con.select_start_y, con.select_end_y);
+	int start_col = MIN(con.select_start_x, con.select_end_x);
+	//int end_row = MAX(con.select_start_y, con.select_end_y);
+	//int end_col = MAX(con.select_start_x, con.select_end_x);
+
+	VTermPos pos = {.row = 0, .col = 0};
+	ScreenCell* vtsc = NULL;
+
+	for(int i = 0; i < len; i++)
+	{
+		pos.col = (start_col + i) % con.size_x;
+		pos.row = (start_row + (i / con.size_x));
+
+		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+		output[i] = (char)vtsc->chars[0];
+	}
+
+	output[len-1] = '\0';
+
+	*selection = output;
+
+	return len;
 }
 
 void draw_screen_color(Rect* r)
@@ -208,6 +307,32 @@ void draw_screen_color(Rect* r)
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
+	int i = 0;
+	int select_start = -1;
+	int select_end = -1;
+
+	if (con.mouse_mode == CLICK_SELECT && con.mouse_state) update_selection_end();
+
+	if (con.mouse_mode == CLICK_SELECT && con.select_start_x != -1)
+	{
+		int a = con.select_start_x + con.select_start_y * con.size_x;
+		int b = con.select_end_x + con.select_end_y * con.size_x;
+
+		if (a < b)
+		{
+			select_start = a;
+			select_end = b;
+		}
+		else
+		{
+			select_start = b;
+			select_end = a;
+		}
+
+		select_start = MIN(a,b);
+		select_end = MAX(a,b);
+	}
+
 	for(pos.row = minRow; pos.row < maxRow; pos.row++)
 	{
 		for (pos.col = minCol; pos.col < maxCol; pos.col++)
@@ -233,6 +358,11 @@ void draw_screen_color(Rect* r)
 			{
 				InvertRect(&cr);
 			}
+			if (i < select_end && i >= select_start)
+			{
+				InvertRect(&cr);
+			}
+			i++;
 		}
 	}
 
