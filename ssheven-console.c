@@ -420,13 +420,18 @@ void draw_screen_fast(Rect* r)
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
+	char row_text[con.size_x];
+
 	for(pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
 		for (pos.col = 0; pos.col < con.size_x; pos.col++)
 		{
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-			draw_char(pos.col, pos.row, r, (char)vtsc->chars[0]);
+			row_text[pos.col] = (char)vtsc->chars[0];
 		}
+
+		MoveTo(r->left + 2, r->top + ((pos.row+1) * con.cell_height) - 2);
+		DrawText(row_text, 0, con.size_x);
 	}
 
 	// do the cursor if needed
