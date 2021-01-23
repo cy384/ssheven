@@ -161,6 +161,14 @@ void point_to_cell(Point p, int* x, int* y)
 	if (*y > con.size_y) *y = con.size_y;
 }
 
+void clear_selection(void)
+{
+	con.select_start_x = -1;
+	con.select_start_y = -1;
+	con.select_end_x = -1;
+	con.select_end_y = -1;
+}
+
 void damage_selection(void)
 {
 	// damage all rows that have part of the selection (TODO make this better)
@@ -213,13 +221,7 @@ void mouse_click(Point p, int click)
 			point_to_cell(p, &c, &d);
 
 			// if in same cell, cancel the selection
-			if (a == c && b == d)
-			{
-				con.select_start_x = -1;
-				con.select_start_y = -1;
-				con.select_end_x = -1;
-				con.select_end_y = -1;
-			}
+			if (a == c && b == d) clear_selection();
 
 			update_selection_end();
 		}
@@ -228,15 +230,15 @@ void mouse_click(Point p, int click)
 
 size_t get_selection(char** selection)
 {
-	int a = con.select_start_x + con.select_start_y * con.size_x;
-	int b = con.select_end_x + con.select_end_y * con.size_x;
-
-	ssize_t len = MAX(a,b) - MIN(a,b) + 1;
-	if (len == 0)
+	if (con.select_start_x == -1 || con.select_start_y == -1)
 	{
 		*selection = NULL;
 		return 0;
 	}
+	int a = con.select_start_x + con.select_start_y * con.size_x;
+	int b = con.select_end_x + con.select_end_y * con.size_x;
+
+	ssize_t len = MAX(a,b) - MIN(a,b) + 1;
 
 	char* output = malloc(sizeof(char) * len);
 
@@ -311,26 +313,26 @@ void draw_screen_color(Rect* r)
 	int select_start = -1;
 	int select_end = -1;
 
-	if (con.mouse_mode == CLICK_SELECT && con.mouse_state) update_selection_end();
-
-	if (con.mouse_mode == CLICK_SELECT && con.select_start_x != -1)
+	if (con.mouse_mode == CLICK_SELECT)
 	{
-		int a = con.select_start_x + con.select_start_y * con.size_x;
-		int b = con.select_end_x + con.select_end_y * con.size_x;
+		if (con.mouse_state) update_selection_end();
 
-		if (a < b)
+		if (con.select_start_x != -1)
 		{
-			select_start = a;
-			select_end = b;
-		}
-		else
-		{
-			select_start = b;
-			select_end = a;
-		}
+			int a = con.select_start_x + con.select_start_y * con.size_x;
+			int b = con.select_end_x + con.select_end_y * con.size_x;
 
-		select_start = MIN(a,b);
-		select_end = MAX(a,b);
+			if (a < b)
+			{
+				select_start = a;
+				select_end = b;
+			}
+			else
+			{
+				select_start = b;
+				select_end = a;
+			}
+		}
 	}
 
 	char c = 0;
@@ -420,6 +422,31 @@ void draw_screen_fast(Rect* r)
 	TextFace(normal);
 	TextMode(srcOr);
 
+	int select_start = -1;
+	int select_end = -1;
+	int i = 0;
+
+	if (con.mouse_mode == CLICK_SELECT)
+	{
+		if (con.mouse_state) update_selection_end();
+
+		if (con.select_start_x != -1)
+		{
+			int a = con.select_start_x + con.select_start_y * con.size_x;
+			int b = con.select_end_x + con.select_end_y * con.size_x;
+
+			if (a < b)
+			{
+				select_start = a;
+				select_end = b;
+			}
+			else
+			{
+				select_start = b;
+				select_end = a;
+			}
+		}
+	}
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
@@ -434,7 +461,8 @@ void draw_screen_fast(Rect* r)
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
 			row_text[pos.col] = (char)vtsc->chars[0];
 			if (row_text[pos.col] == '\0') row_text[pos.col] = ' ';
-			row_invert[pos.col] = vtsc->pen.reverse;
+			row_invert[pos.col] = vtsc->pen.reverse ^ (i < select_end && i >= select_start);
+			i++;
 		}
 
 		MoveTo(r->left + 2, r->top + ((pos.row+1) * con.cell_height) - 2);
@@ -609,6 +637,8 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 		case VTERM_PROP_MOUSE: // number
 			// record whether or not the terminal wants mouse clicks
 			con.mouse_mode = (val->number == VTERM_PROP_MOUSE_CLICK) ? CLICK_SEND : CLICK_SELECT;
+			damage_selection();
+			clear_selection();
 			return 1;
 		case VTERM_PROP_ALTSCREEN: // bool
 		case VTERM_PROP_ICONNAME: // string
