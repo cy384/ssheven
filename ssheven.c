@@ -287,12 +287,12 @@ void ssh_paste(void)
 
 void ssh_copy(void)
 {
-	OSErr e = ZeroScrap();
-	if (e != noErr) printf_i("Failed to ZeroScrap!");
-
 	char* selection = NULL;
 	size_t len = get_selection(&selection);
 	if (selection == NULL || len == 0) return;
+
+	OSErr e = ZeroScrap();
+	if (e != noErr) printf_i("Failed to ZeroScrap!");
 
 	e = PutScrap(len, 'TEXT', selection);
 	if (e != noErr) printf_i("Failed to PutScrap!");
