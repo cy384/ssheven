@@ -266,6 +266,23 @@ size_t get_selection(char** selection)
 	return len;
 }
 
+// TODO: find a way to render this once and then just paste it on
+inline void draw_resize_corner(void)
+{
+	// draw the grow icon in the bottom right corner, but not the scroll bars
+	// yes, this is really awkward
+	MacRegion bottom_right_corner = { 10, con.win->portRect};
+	MacRegion* brc = &bottom_right_corner;
+	MacRegion** old = con.win->clipRgn;
+
+	bottom_right_corner.rgnBBox.top = bottom_right_corner.rgnBBox.bottom - 15;
+	bottom_right_corner.rgnBBox.left = bottom_right_corner.rgnBBox.right - 15;
+
+	con.win->clipRgn = &brc;
+	DrawGrowIcon(con.win);
+	con.win->clipRgn = old;
+}
+
 void draw_screen_color(Rect* r)
 {
 	// get the intersection of our console region and the update region
@@ -341,12 +358,31 @@ void draw_screen_color(Rect* r)
 		for (pos.col = minCol; pos.col < maxCol; pos.col++)
 		{
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+			c = (char)vtsc->chars[0];
 
-			qd.thePort->fgColor = idx2qd(vtsc->pen.fg);
-			qd.thePort->bkColor = idx2qd(vtsc->pen.bg);
+			if (vtsc->pen.reverse)
+			{
+				qd.thePort->bkColor = idx2qd(vtsc->pen.fg);
+				qd.thePort->fgColor = idx2qd(vtsc->pen.bg);
+			}
+			else
+			{
+				qd.thePort->fgColor = idx2qd(vtsc->pen.fg);
+				qd.thePort->bkColor = idx2qd(vtsc->pen.bg);
+			}
 
 			cr = cell_rect(pos.col, pos.row, *r);
 			EraseRect(&cr);
+
+			if (c == '\0' || c == ' ')
+			{
+				if (i < select_end && i >= select_start)
+				{
+					InvertRect(&cr);
+				}
+				i++;
+				continue;
+			}
 
 			face = normal;
 			if (vtsc->pen.bold) face |= (condense|bold);
@@ -354,15 +390,9 @@ void draw_screen_color(Rect* r)
 			if (vtsc->pen.underline) face |= underline;
 
 			if (face != normal) TextFace(face);
-			c = (char)vtsc->chars[0];
-			if (c == '\0') c = ' ';
 			draw_char(pos.col, pos.row, r, c);
 			if (face != normal) TextFace(normal);
 
-			if (vtsc->pen.reverse)
-			{
-				InvertRect(&cr);
-			}
 			if (i < select_end && i >= select_start)
 			{
 				InvertRect(&cr);
@@ -385,18 +415,7 @@ void draw_screen_color(Rect* r)
 	qd.thePort->fgColor = save_font_fg;
 	qd.thePort->bkColor = save_font_bg;
 
-	// draw the grow icon in the bottom right corner, but not the scroll bars
-	// yes, this is really awkward
-	MacRegion bottom_right_corner = { 10, con.win->portRect};
-	MacRegion* brc = &bottom_right_corner;
-	MacRegion** old = con.win->clipRgn;
-
-	bottom_right_corner.rgnBBox.top = bottom_right_corner.rgnBBox.bottom - 15;
-	bottom_right_corner.rgnBBox.left = bottom_right_corner.rgnBBox.right - 15;
-
-	con.win->clipRgn = &brc;
-	DrawGrowIcon(con.win);
-	con.win->clipRgn = old;
+	draw_resize_corner();
 }
 
 
@@ -447,6 +466,7 @@ void draw_screen_fast(Rect* r)
 			}
 		}
 	}
+
 	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
@@ -479,7 +499,7 @@ void draw_screen_fast(Rect* r)
 	}
 
 	// do the cursor if needed
-	if (con.cursor_state == 1 && con.cursor_visible == 1)
+	if (con.cursor_state && con.cursor_visible)
 	{
 		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
 		InvertRect(&cursor);
@@ -490,21 +510,19 @@ void draw_screen_fast(Rect* r)
 	TextFace(save_font_face);
 	qd.thePort->fgColor = save_font_fg;
 	qd.thePort->bkColor = save_font_bg;
+
+	//draw_resize_corner();
 }
 
 void draw_screen(Rect* r)
 {
-	switch (prefs.display_mode)
+	if (prefs.display_mode == FASTEST)
 	{
-		case FASTEST:
-			draw_screen_fast(r);
-			break;
-		case COLOR:
-			draw_screen_color(r);
-			break;
-		default:
-			draw_screen_color(r);
-			break;
+		draw_screen_fast(r);
+	}
+	else
+	{
+		draw_screen_color(r);
 	}
 }
 

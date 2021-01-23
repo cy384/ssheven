@@ -498,8 +498,8 @@ resource 'MENU' (MENU_TERM_TYPE) {
 	allEnabled, enabled;
 	"Type";
 	{
-		"Fastest", noIcon, noKey, noMark, plain;
-		"Color", noIcon, noKey, noMark, plain;
+		"Monochrome (faster)", noIcon, noKey, noMark, plain;
+		"Color (slower)", noIcon, noKey, noMark, plain;
 	}
 };
 
