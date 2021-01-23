@@ -609,8 +609,12 @@ void event_loop(void)
 				}
 				break;
 			case mouseUp:
-				GetMouse(&local_mouse_position);
-				mouse_click(local_mouse_position, false);
+				// only tell the console to lift the mouse if we clicked through it
+				if (con.mouse_state)
+				{
+					GetMouse(&local_mouse_position);
+					mouse_click(local_mouse_position, false);
+				}
 				break;
 		}
 
