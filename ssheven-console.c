@@ -418,6 +418,14 @@ void draw_screen_color(Rect* r)
 	draw_resize_corner();
 }
 
+void erase_row(int i)
+{
+	Rect left = cell_rect(0, i, (con.win->portRect));
+	Rect right = cell_rect(con.size_x, i, (con.win->portRect));
+
+	UnionRect(&left, &right, &left);
+	EraseRect(&left);
+}
 
 void draw_screen_fast(Rect* r)
 {
@@ -434,7 +442,7 @@ void draw_screen_fast(Rect* r)
 	qd.thePort->bkColor = whiteColor;
 	qd.thePort->fgColor = blackColor;
 
-	EraseRect(r);
+	//EraseRect(r);
 
 	TextFont(kFontIDMonaco);
 	TextSize(9);
@@ -476,6 +484,8 @@ void draw_screen_fast(Rect* r)
 
 	for(pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
+		erase_row(pos.row);
+
 		for (pos.col = 0; pos.col < con.size_x; pos.col++)
 		{
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
