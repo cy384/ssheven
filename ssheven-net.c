@@ -524,6 +524,13 @@ void* read_thread(void* arg)
 
 	// connect
 	ok = init_connection(prefs.hostname+1);
+
+	if (!ok)
+	{
+		read_thread_state = DONE;
+		return 0;
+	}
+
 	YieldToAnyThread();
 
 	// check the server pub key vs. known hosts
