@@ -13,7 +13,7 @@ system requirements
 * CPU: Any PPC processor, or at least a 25 MHz 68040/68LC040.  Presently, all 68030 and 68020 CPUs are too slow.
 * RAM: 2MB.
 * Disk space: 1MB for the fat binary.
-* System 7.5 or later, possibly earlier System 7 with the Thread Manager extension.
+* System 7.1 or later. Versions below 7.5 require the Thread Manager extension.
 * Open Transport networking required, latest version possible highly recommended.
 
 roadmap
