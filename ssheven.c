@@ -1039,7 +1039,9 @@ int safety_checks(void)
 	long int cpu_type = 0;
 	int cpu_slow = 0;
 	int cpu_bad = 0;
+
 	err = Gestalt(gestaltNativeCPUtype, &cpu_type);
+
 	if (err != noErr || cpu_type == 0)
 	{
 		// earlier than 7.5, need to use other gestalt
@@ -1052,13 +1054,13 @@ int safety_checks(void)
 		else
 		{
 			if (cpu_type <= gestalt68010) cpu_bad = 1;
-			if (cpu_type <= gestalt68030) cpu_slow = 1;
+			if (cpu_type <= gestalt68020) cpu_slow = 1;
 		}
 	}
 	else
 	{
 		if (cpu_type <= gestaltCPU68010) cpu_bad = 1;
-		if (cpu_type <= gestaltCPU68030) cpu_slow = 1;
+		if (cpu_type <= gestaltCPU68020) cpu_slow = 1;
 	}
 
 	// if we don't have at least a 68020, stop
@@ -1068,7 +1070,7 @@ int safety_checks(void)
 		return 0;
 	}
 
-	// if we don't have at least a 68040, warn
+	// if we don't have at least a 68030, warn
 	if (cpu_slow)
 	{
 		CautionAlert(ALRT_CPU_SLOW, nil);

@@ -4,13 +4,13 @@ ssheven
 -------
 A modern SSH client for Mac OS 7/8/9.
 
-Project status: as of 0.8.0 ([see github releases](https://github.com/cy384/ssheven/releases)), a functional SSH client, able to connect via key or password.  Versions prior to 1.0.0 are alpha/beta quality.
+Project status: as of 0.8.0 ([see github releases](https://github.com/cy384/ssheven/releases)), fairly secure and usable, but without a polished UX or all planned features.  Versions prior to 1.0.0 should be considered alpha/beta quality.
 
 ![ssheven screenshot](http://www.cy384.com/media/img/ssheven-0.6.1-screenshot.png)
 
 system requirements
 -------------------
-* CPU: Any PPC processor, or at least a 25 MHz 68040/68LC040.  Presently, all 68030 and 68020 CPUs are too slow.
+* CPU: Any PPC processor, or at least a 68030 (68040 strongly recommended).
 * RAM: 2MB.
 * Disk space: 1MB for the fat binary.
 * System 7.1 or later. Versions below 7.5 require the Thread Manager extension.
@@ -22,6 +22,7 @@ roadmap
 * general ssheven code cleanup
 * select words on double click
 * font face and size options
+* improve draw speed
 
 1.0.0 (first "real" release)
 * nicer error presentation for more failure cases
@@ -32,7 +33,7 @@ roadmap
 * configurable terminal string
 
 known bugs
-* initial key exchange is too slow for 68030 machines (improve `mbedtls_mpi_exp_mod` and BN assembly) (needs 5x speed improvement for 68030)
+* drawing the screen is wildly slow
 * input latency feels high because redrawing the screen is slow
 * receiving a large amount of data breaks the channel (e.g. `cat /dev/zero`)
 * excessive redraws/flicker while selecting
@@ -41,7 +42,7 @@ known bugs
 
 possible upcoming features
 * scp file transfer
-* more complete color support (currently uses an 8-color hack)
+* more complete color support (currently uses the default Mac 8 color palette)
 * keyboard-interactive authentication
 
 build
