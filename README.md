@@ -20,7 +20,6 @@ roadmap
 -------
 0.9.0
 * general ssheven code cleanup
-* select words on double click
 * font face and size options
 * improve draw speed
 
@@ -36,9 +35,8 @@ known bugs
 * drawing the screen is wildly slow
 * input latency feels high because redrawing the screen is slow
 * receiving a large amount of data breaks the channel (e.g. `cat /dev/zero`)
-* excessive redraws/flicker while selecting
 * non-US keyboard input has issues
-* custom colors are a little wonky
+* custom colors are wonky
 
 possible upcoming features
 * scp file transfer

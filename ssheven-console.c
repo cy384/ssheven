@@ -195,9 +195,6 @@ void update_selection_end(void)
 	// only damage the selection if the mouse has moved outside of the last cell
 	if (last_mouse_cell_x != new_mouse_cell_x || last_mouse_cell_y != new_mouse_cell_y)
 	{
-		// damage the old selection
-		damage_selection();
-
 		con.select_end_x = new_mouse_cell_x;
 		con.select_end_y = new_mouse_cell_y;
 
@@ -209,10 +206,88 @@ void update_selection_end(void)
 	}
 }
 
+inline void prev(int* x, int* y)
+{
+	if (*x == 0)
+	{
+		*x = con.size_x - 1;
+		*y = (*y) - 1;
+	}
+	else
+	{
+		*x = (*x) - 1;
+	}
+}
+
+inline void next(int* x, int* y)
+{
+	if (*x == con.size_x -1)
+	{
+		*x = 0;
+		*y = (*y) + 1;
+	}
+	else
+	{
+		*x = (*x) + 1;
+	}
+}
+
+void select_word(void)
+{
+	Point mouse;
+	GetMouse(&mouse);
+
+	VTermPos pos;
+	point_to_cell(mouse, &pos.col, &pos.row);
+	pos.col++;
+
+	ScreenCell* vtsc = NULL;
+	char c;
+
+	// scan backwards from mouse click point
+	while (!(pos.col == 0 && pos.row == 0))
+	{
+		prev(&pos.col, &pos.row);
+
+		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+		c = (char)vtsc->chars[0];
+		if (c == '\0' || c == ' ')
+		{
+			next(&pos.col, &pos.row);
+			break;
+		}
+	}
+
+	con.select_start_x = pos.col;
+	con.select_start_y = pos.row;
+
+	// scan forwards from mouse click point
+	point_to_cell(mouse, &pos.col, &pos.row);
+	pos.col--;
+
+	while (!(pos.col == con.size_x - 1 && pos.row == con.size_y -1))
+	{
+		next(&pos.col, &pos.row);
+
+		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+		c = (char)vtsc->chars[0];
+		if (c == '\0' || c == ' ')
+		{
+			break;
+		}
+	}
+
+	con.select_end_x = pos.col;
+	con.select_end_y = pos.row;
+
+	damage_selection();
+}
+
 // p is in window local coordinates
 void mouse_click(Point p, int click)
 {
 	static Point last_click;
+	static unsigned last_click_time = 0;
 
 	con.mouse_state = click;
 
@@ -229,11 +304,22 @@ void mouse_click(Point p, int click)
 		{
 			// damage the old selection so it gets wiped from the screen
 			damage_selection();
-
 			last_click = p;
-			point_to_cell(p, &con.select_start_x, &con.select_start_y);
-			point_to_cell(p, &con.select_end_x, &con.select_end_y);
-			update_selection_end();
+
+			// if it's a double click
+			if (TickCount() - last_click_time < GetDblTime())
+			{
+				select_word();
+			}
+			else
+			{
+				point_to_cell(p, &con.select_start_x, &con.select_start_y);
+				point_to_cell(p, &con.select_end_x, &con.select_end_y);
+
+				update_selection_end();
+			}
+
+			last_click_time = TickCount();
 		}
 		else
 		{
@@ -242,9 +328,9 @@ void mouse_click(Point p, int click)
 			point_to_cell(p, &c, &d);
 
 			// if in same cell, cancel the selection
-			if (a == c && b == d) clear_selection();
+			//if (a == c && b == d) clear_selection();
 
-			update_selection_end();
+			//update_selection_end();
 		}
 	}
 }
