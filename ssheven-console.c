@@ -354,13 +354,12 @@ size_t get_selection(char** selection)
 	//int end_row = MAX(con.select_start_y, con.select_end_y);
 	//int end_col = MAX(con.select_start_x, con.select_end_x);
 
-	VTermPos pos = {.row = 0, .col = 0};
+	VTermPos pos = {.row = start_row, .col = start_col-1};
 	ScreenCell* vtsc = NULL;
 
 	for(int i = 0; i < len; i++)
 	{
-		pos.col = (start_col + i) % con.size_x;
-		pos.row = (start_row + (i / con.size_x));
+		next(&pos.col, &pos.row);
 
 		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
 		output[i] = (char)vtsc->chars[0];
