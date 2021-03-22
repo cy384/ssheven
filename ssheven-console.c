@@ -181,11 +181,32 @@ void damage_selection(void)
 
 void update_selection_end(void)
 {
-	Point new_mouse;
-	GetMouse(&new_mouse);
-	point_to_cell(new_mouse, &con.select_end_x, &con.select_end_y);
+	static int last_mouse_cell_x = -1;
+	static int last_mouse_cell_y = -1;
 
-	damage_selection();
+	int new_mouse_cell_x;
+	int new_mouse_cell_y;
+
+	Point new_mouse;
+
+	GetMouse(&new_mouse);
+	point_to_cell(new_mouse, &new_mouse_cell_x, &new_mouse_cell_y);
+
+	// only damage the selection if the mouse has moved outside of the last cell
+	if (last_mouse_cell_x != new_mouse_cell_x || last_mouse_cell_y != new_mouse_cell_y)
+	{
+		// damage the old selection
+		damage_selection();
+
+		con.select_end_x = new_mouse_cell_x;
+		con.select_end_y = new_mouse_cell_y;
+
+		last_mouse_cell_x = new_mouse_cell_x;
+		last_mouse_cell_y = new_mouse_cell_y;
+
+		// damage the new selection
+		damage_selection();
+	}
 }
 
 // p is in window local coordinates
