@@ -16,11 +16,11 @@
 #define SSHEVEN_RELEASE_REGION      verUS
 
 /* requested number of bytes for RAM, used in SIZE resource */
-#define SSHEVEN_MINIMUM_PARTITION   2048*1024
+#define SSHEVEN_MINIMUM_PARTITION   2*1024*1024
 #define SSHEVEN_REQUIRED_PARTITION  SSHEVEN_MINIMUM_PARTITION
 
 /* size in bytes for recv and send thread buffers */
-#define SSHEVEN_BUFFER_SIZE 4096
+#define SSHEVEN_BUFFER_SIZE 16*1024
 
 /* default terminal string */
 #define SSHEVEN_DEFAULT_TERM_STRING "xterm-16color"
