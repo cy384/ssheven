@@ -32,10 +32,7 @@ struct preferences prefs;
 enum THREAD_COMMAND read_thread_command = WAIT;
 enum THREAD_STATE read_thread_state = UNINTIALIZED;
 
-// contains a mapping of apple virtual keycode to ascii control code
-// currently only for A-Z
-// probably only works for US english keyboard layouts?
-const uint8_t virtual_keycode_to_control_ascii[255] = {1, 19, 4, 6, 8, 7, 26, 24, 3, 22, 255, 2, 17, 23, 5, 18, 25, 20, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 15, 21, 255, 9, 16, 255, 12, 10, 255, 11, 255, 255, 255, 255, 14, 13, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+const uint8_t ascii_to_control_code[255] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 27, 28, 29, 30, 31, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
 
 void set_window_title(WindowPtr w, const char* c_name)
 {
@@ -499,45 +496,40 @@ int handle_keypress(EventRecord* event)
 				break;
 		}
 	}
-	// if we have a key and control, and it's not autorepeating
-	else if (c && event->what != autoKey && event->modifiers & controlKey)
-	{
-		// check if we know a control code translation for that key
-		uint8_t control_code = virtual_keycode_to_control_ascii[((event->message & keyCodeMask)>>8)];
-
-		if (control_code != 255)
-		{
-			ssh_con.send_buffer[0] = control_code;
-			ssh_write(ssh_con.send_buffer, 1);
-		}
-	}
-	// if it's just a normal key
-	// note that this is after translation, e.g. shift-f -> 'F'
 	else if (c)
 	{
 		// TODO this sucks
-		// manually send an escape if we have alt option held
-		if (event->modifiers & optionKey)
-		{
-			ssh_con.send_buffer[0] = '\e';
-			ssh_write(ssh_con.send_buffer, 1);
-		}
+		// it does several things:
+		// gets the currently loaded keymap
+		// uses it to translate the virtual keycode without modifiers or state
+		// ignores the second byte if we're currently using a multibyte lang
+		uint8_t unmodified_key = KeyTranslate((void*)GetScriptManagerVariable(smKCHRCache), (event->message & keyCodeMask)>>8, 0) & 0xff;
 
-		if (key_to_vterm[c] != VTERM_KEY_NONE)
+		// if we have a control code for this key
+		if (event->modifiers & controlKey && ascii_to_control_code[unmodified_key] != 255)
 		{
-			// doesn't seem like vterm does modifiers properly
-			vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
-		}
-		else if (event->modifiers & optionKey)
-		{
-			int unmodified_key = KeyTranslate((void*)GetScriptManagerVariable(smKCHRCache), (event->message & keyCodeMask)>>8, 0);
-			ssh_con.send_buffer[0] = unmodified_key & 0xff;
+			ssh_con.send_buffer[0] = ascii_to_control_code[unmodified_key];
 			ssh_write(ssh_con.send_buffer, 1);
 		}
 		else
 		{
-			ssh_con.send_buffer[0] = c;
-			ssh_write(ssh_con.send_buffer, 1);
+			// manually send an escape if we have alt option held
+			if (event->modifiers & optionKey)
+			{
+				ssh_con.send_buffer[0] = '\e';
+				ssh_write(ssh_con.send_buffer, 1);
+			}
+
+			if (key_to_vterm[c] != VTERM_KEY_NONE)
+			{
+				// doesn't seem like vterm does modifiers properly, so don't bother
+				vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
+			}
+			else
+			{
+				ssh_con.send_buffer[0] = event->modifiers & optionKey ? unmodified_key : c;
+				ssh_write(ssh_con.send_buffer, 1);
+			}
 		}
 	}
 
