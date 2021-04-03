@@ -515,9 +515,24 @@ int handle_keypress(EventRecord* event)
 	// note that this is after translation, e.g. shift-f -> 'F'
 	else if (c)
 	{
+		// TODO this sucks
+		// manually send an escape if we have alt option held
+		if (event->modifiers & optionKey)
+		{
+			ssh_con.send_buffer[0] = '\e';
+			ssh_write(ssh_con.send_buffer, 1);
+		}
+
 		if (key_to_vterm[c] != VTERM_KEY_NONE)
 		{
+			// doesn't seem like vterm does modifiers properly
 			vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
+		}
+		else if (event->modifiers & optionKey)
+		{
+			int unmodified_key = KeyTranslate((void*)GetScriptManagerVariable(smKCHRCache), (event->message & keyCodeMask)>>8, 0);
+			ssh_con.send_buffer[0] = unmodified_key & 0xff;
+			ssh_write(ssh_con.send_buffer, 1);
 		}
 		else
 		{
