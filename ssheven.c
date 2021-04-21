@@ -34,6 +34,25 @@ enum THREAD_STATE read_thread_state = UNINTIALIZED;
 
 const uint8_t ascii_to_control_code[255] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 27, 28, 29, 30, 31, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
 
+// maps virtual keycodes to (hopefully) ascii characters
+// this will probably be weird for non-letter keypresses
+uint8_t keycode_to_ascii[255] = {0};
+
+void generate_key_mapping(void)
+{
+	// TODO this sucks
+	// gets the currently loaded keymap resource
+	// passes in the virtual keycode but without any previous state or modifiers
+	// ignores the second byte if we're currently using a multibyte lang
+
+	void* kchr = (void*)GetScriptManagerVariable(smKCHRCache);
+
+	for (uint16_t i = 0; i < 255; i++)
+	{
+		keycode_to_ascii[i] = KeyTranslate(kchr, i, 0) & 0xff;
+	}
+}
+
 void set_window_title(WindowPtr w, const char* c_name)
 {
 	Str255 pascal_name;
@@ -498,12 +517,8 @@ int handle_keypress(EventRecord* event)
 	}
 	else if (c)
 	{
-		// TODO this sucks
-		// it does several things:
-		// gets the currently loaded keymap
-		// uses it to translate the virtual keycode without modifiers or state
-		// ignores the second byte if we're currently using a multibyte lang
-		uint8_t unmodified_key = KeyTranslate((void*)GetScriptManagerVariable(smKCHRCache), (event->message & keyCodeMask)>>8, 0) & 0xff;
+		// get the unmodified version of the keypress
+		uint8_t unmodified_key = keycode_to_ascii[(event->message & keyCodeMask)>>8];
 
 		// if we have a control code for this key
 		if (event->modifiers & controlKey && ascii_to_control_code[unmodified_key] != 255)
@@ -1124,6 +1139,8 @@ int main(int argc, char** argv)
 	DisableItem(menu, 9);
 
 	DrawMenuBar();
+
+	generate_key_mapping();
 
 	console_setup();
 
