@@ -157,6 +157,9 @@ void update_selection_end(void)
 	// only damage the selection if the mouse has moved outside of the last cell
 	if (last_mouse_cell_x != new_mouse_cell_x || last_mouse_cell_y != new_mouse_cell_y)
 	{
+		// damage the old selection
+		damage_selection();
+
 		con.select_end_x = new_mouse_cell_x;
 		con.select_end_y = new_mouse_cell_y;
 
