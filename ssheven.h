@@ -90,6 +90,8 @@ struct preferences
 	enum { FASTEST, COLOR } display_mode;
 	int fg_color;
 	int bg_color;
+
+	int font_size;
 };
 
 extern struct preferences prefs;

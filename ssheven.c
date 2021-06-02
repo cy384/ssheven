@@ -131,7 +131,7 @@ int save_prefs(void)
 		memset(output_buffer, 0, write_length);
 
 		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", prefs.major_version, prefs.minor_version);
-		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color);
+		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.font_size);
 
 		snprintf(output_buffer+i, prefs.hostname[0]+1, "%s", prefs.hostname+1); i += prefs.hostname[0];
 		i += snprintf(output_buffer+i, write_length-i, "\n");
@@ -192,6 +192,7 @@ void init_prefs(void)
 	prefs.display_mode = COLOR;
 	prefs.fg_color = blackColor;
 	prefs.bg_color = whiteColor;
+	prefs.font_size = 9;
 
 	prefs.loaded_from_file = 0;
 }
@@ -241,7 +242,7 @@ void load_prefs(void)
 	if ((prefs.major_version == SSHEVEN_VERSION_MAJOR) && (prefs.minor_version == SSHEVEN_VERSION_MINOR))
 	{
 		prefs.loaded_from_file = 1;
-		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
+		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, &prefs.font_size, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
 
 		// add the size for the pascal strings
 		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
@@ -478,7 +479,7 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 		int width = growResult & 0xFFFF;
 
 		// 'snap' to a size that won't have extra pixels not in a cell
-		int next_height = height - ((height - 2) % con.cell_height);
+		int next_height = height - ((height - 4) % con.cell_height);
 		int next_width = width - ((width - 4) % con.cell_width);
 
 		SizeWindow(eventWin, next_width, next_height, true);
@@ -567,12 +568,12 @@ void event_loop(void)
 		// wait to get a GUI event
 		while (!WaitNextEvent(everyEvent, &event, sleep_time, NULL))
 		{
-			// timed out without any GUI events
-			// toggle our cursor if needed
+			YieldToAnyThread();
 			check_cursor();
 
-			// then let any other threads run before we wait for events again
-			YieldToAnyThread();
+			BeginUpdate(con.win);
+			draw_screen(&(con.win->portRect));
+			EndUpdate(con.win);
 		}
 
 		// might need to toggle our cursor even if we got an event

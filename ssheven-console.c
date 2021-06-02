@@ -20,6 +20,8 @@
 
 char key_to_vterm[256] = { VTERM_KEY_NONE };
 
+int font_offset = 0;
+
 void setup_key_translation(void)
 {
 	// TODO: figure out how to translate the rest of these
@@ -57,11 +59,10 @@ void setup_key_translation(void)
 	//key_to_vterm[0] = VTERM_KEY_KP_EQUAL;
 }
 
-Rect cell_rect(int x, int y, Rect bounds)
+inline Rect cell_rect(int x, int y, Rect bounds)
 {
-	Rect r = { (short) (bounds.top + y * con.cell_height), (short) (bounds.left + x * con.cell_width + 2),
-		(short) (bounds.top + (y+1) * con.cell_height), (short) (bounds.left + (x+1) * con.cell_width + 2) };
-
+	Rect r = { (short) (bounds.top + y * con.cell_height + 2), (short) (bounds.left + x * con.cell_width + 2),
+		(short) (bounds.top + (y+1) * con.cell_height + 2), (short) (bounds.left + (x+1) * con.cell_width + 2) };
 	return r;
 }
 
@@ -72,7 +73,7 @@ void print_string(const char* c)
 
 inline void draw_char(int x, int y, Rect* r, char c)
 {
-	MoveTo(r->left + x * con.cell_width + 2, r->top + ((y+1) * con.cell_height) - 2);
+	MoveTo(r->left + 2 + x * con.cell_width, r->top + 2 - font_offset + ((y+1) * con.cell_height));
 	DrawChar(c);
 }
 
@@ -111,46 +112,7 @@ int qd2idx(int qdc)
 }
 
 // convert vterm's ANSI color indexes into Quickdraw colors
-inline int idx2qd(VTermColor c)
-{
-	switch (c.indexed.idx)
-	{
-		case 0:
-			return blackColor;
-		case 1:
-			return redColor;
-		case 2:
-			return greenColor;
-		case 3:
-			return yellowColor;
-		case 4:
-			return blueColor;
-		case 5:
-			return magentaColor;
-		case 6:
-			return cyanColor;
-		case 7:
-			return whiteColor;
-		case 8:
-			return blackColor;
-		case 9:
-			return redColor;
-		case 10:
-			return greenColor;
-		case 11:
-			return yellowColor;
-		case 12:
-			return blueColor;
-		case 13:
-			return magentaColor;
-		case 14:
-			return cyanColor;
-		case 15:
-			return whiteColor;
-		default:
-			return blackColor;
-	}
-}
+int idx2qd[16] = { blackColor, redColor, greenColor, yellowColor, blueColor, magentaColor, cyanColor, whiteColor, blackColor, redColor, greenColor, yellowColor, blueColor, magentaColor, cyanColor, whiteColor };
 
 void point_to_cell(Point p, int* x, int* y)
 {
@@ -403,11 +365,6 @@ void draw_screen_color(Rect* r)
 	//short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
 	//short maxCol = (con.size_x < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? con.size_x : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
 
-	short minRow = 0;
-	short maxRow = con.size_y;
-	short minCol = 0;
-	short maxCol = con.size_x;
-
 	// don't clobber font settings
 	short save_font      = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
@@ -415,15 +372,19 @@ void draw_screen_color(Rect* r)
 	short save_font_fg   = qd.thePort->fgColor;
 	short save_font_bg   = qd.thePort->bkColor;
 
-	TextFont(kFontIDMonaco);
-	TextSize(9);
-	TextFace(normal);
-	qd.thePort->bkColor = prefs.bg_color;
-	qd.thePort->fgColor = prefs.fg_color;
+	short minRow = 0;
+	short maxRow = con.size_y;
+	short minCol = 0;
+	short maxCol = con.size_x;
 
 	TextFont(kFontIDMonaco);
-	TextSize(9);
+	TextSize(prefs.font_size);
 	TextFace(normal);
+	BackColor(prefs.bg_color);
+	ForeColor(prefs.fg_color);
+
+	//EraseRect(&con.offscreen->portRect);
+
 	TextMode(srcOr);
 
 	short face = normal;
@@ -468,13 +429,13 @@ void draw_screen_color(Rect* r)
 
 			if (vtsc->pen.reverse)
 			{
-				qd.thePort->bkColor = idx2qd(vtsc->pen.fg);
-				qd.thePort->fgColor = idx2qd(vtsc->pen.bg);
+				BackColor(idx2qd[vtsc->pen.fg.indexed.idx]);
+				ForeColor(idx2qd[vtsc->pen.bg.indexed.idx]);
 			}
 			else
 			{
-				qd.thePort->fgColor = idx2qd(vtsc->pen.fg);
-				qd.thePort->bkColor = idx2qd(vtsc->pen.bg);
+				ForeColor(idx2qd[vtsc->pen.fg.indexed.idx]);
+				BackColor(idx2qd[vtsc->pen.bg.indexed.idx]);
 			}
 
 			cr = cell_rect(pos.col, pos.row, *r);
@@ -495,9 +456,8 @@ void draw_screen_color(Rect* r)
 			if (vtsc->pen.italic) face |= (condense|italic);
 			if (vtsc->pen.underline) face |= underline;
 
-			if (face != normal) TextFace(face);
+			TextFace(face);
 			draw_char(pos.col, pos.row, r, c);
-			if (face != normal) TextFace(normal);
 
 			if (i < select_end && i >= select_start)
 			{
@@ -543,17 +503,11 @@ void draw_screen_fast(Rect* r)
 	short save_font_bg   = qd.thePort->bkColor;
 
 	TextFont(kFontIDMonaco);
-	TextSize(9);
+	TextSize(prefs.font_size);
 	TextFace(normal);
 	qd.thePort->bkColor = whiteColor;
 	qd.thePort->fgColor = blackColor;
-
-	//EraseRect(r);
-
-	TextFont(kFontIDMonaco);
-	TextSize(9);
-	TextFace(normal);
-	TextMode(srcOr);
+	TextMode(srcOr); // or mode is faster for drawing black on white
 
 	int select_start = -1;
 	int select_end = -1;
@@ -588,6 +542,8 @@ void draw_screen_fast(Rect* r)
 	char row_invert[con.size_x];
 	Rect cr;
 
+	int vertical_offset = r->top + con.cell_height - font_offset + 2;
+
 	for(pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
 		erase_row(pos.row);
@@ -601,7 +557,7 @@ void draw_screen_fast(Rect* r)
 			i++;
 		}
 
-		MoveTo(r->left + 2, r->top + ((pos.row+1) * con.cell_height) - 2);
+		MoveTo(r->left + 2, vertical_offset);
 		DrawText(row_text, 0, con.size_x);
 
 		for (int i = 0; i < con.size_x; i++)
@@ -612,6 +568,7 @@ void draw_screen_fast(Rect* r)
 				InvertRect(&cr);
 			}
 		}
+		vertical_offset += con.cell_height;
 	}
 
 	// do the cursor if needed
@@ -814,21 +771,26 @@ void console_setup(void)
 	con.size_y = 24;
 
 	TextFont(kFontIDMonaco);
-	TextSize(9);
+	TextSize(prefs.font_size);
 	TextFace(normal);
 
-	con.cell_height = 12;
-	con.cell_width = CharWidth('M');
+	FontInfo fi = {0};
+	GetFontInfo(&fi);
+
+	con.cell_height = fi.ascent + fi.descent + fi.leading + 1;
+	font_offset = fi.descent;
+	con.cell_width = fi.widMax;
 
 	TextFont(save_font);
 	TextSize(save_font_size);
 	TextFace(save_font_face);
 
 	Rect initial_window_bounds = qd.screenBits.bounds;
+
 	InsetRect(&initial_window_bounds, 20, 20);
 	initial_window_bounds.top += 40;
 
-	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * con.size_y + 2;
+	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * con.size_y + 4;
 	initial_window_bounds.right = initial_window_bounds.left + con.cell_width * con.size_x + 4;
 
 	ConstStr255Param title = "\pssheven " SSHEVEN_VERSION;
