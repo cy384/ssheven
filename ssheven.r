@@ -503,8 +503,23 @@ resource 'MENU' (MENU_TERM_TYPE) {
 	}
 };
 
+resource 'MENU' (MENU_FONT_SIZE) {
+	MENU_FONT_SIZE, textMenuProc;
+	allEnabled, enabled;
+	"Size";
+	{
+		"9", noIcon, noKey, noMark, plain;
+		"10", noIcon, noKey, noMark, plain;
+		"12", noIcon, noKey, noMark, plain;
+		"14", noIcon, noKey, noMark, plain;
+		"18", noIcon, noKey, noMark, plain;
+		"24", noIcon, noKey, noMark, plain;
+		"36", noIcon, noKey, noMark, plain;
+	}
+};
+
 resource 'DLOG' (DLOG_PREFERENCES) {
-	{ 50, 100, 195, 420 },
+	{ 50, 100, 205, 420 },
 	dBoxProc,
 	visible,
 	noGoAway,
@@ -516,7 +531,7 @@ resource 'DLOG' (DLOG_PREFERENCES) {
 
 resource 'DITL' (DITL_PREFERENCES) {
 	{
-		{ 115, 230, 135, 310 },
+		{ 125, 230, 145, 310 },
 		Button { enabled, "OK" };
 
 		{ 190-10-20-5, 320-10-80-5, 190-10+5, 320-10+5 }, /* box for border */
@@ -540,7 +555,13 @@ resource 'DITL' (DITL_PREFERENCES) {
 		{ 70, 150, 89, 300 },
 		Control { enabled, CNTL_PREF_FG_COLOR };
 
-		{ 115, 10, 135, 90 },
+		{ 100, 66, 118, 132 },
+		StaticText { enabled, "Font Size: " };
+
+		{ 100, 150, 119, 300 },
+		Control { enabled, CNTL_PREF_FONT_SIZE };
+
+		{ 125, 10, 145, 90 },
 		Button { enabled, "Cancel" };
 
 		/*
@@ -578,6 +599,17 @@ resource 'CNTL' (CNTL_PREF_TERM_TYPE) {
 	visible,
 	0,
 	MENU_TERM_TYPE,
+	popupMenuProc,
+	0,
+	""
+};
+
+resource 'CNTL' (CNTL_PREF_FONT_SIZE) {
+	{ 0, 0, 19, 150 },
+	popupTitleLeftJust,
+	visible,
+	0,
+	MENU_FONT_SIZE,
 	popupMenuProc,
 	0,
 	""

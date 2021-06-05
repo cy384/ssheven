@@ -347,6 +347,36 @@ int menu_item_to_qd_color(int menu_item)
 	}
 }
 
+int font_size_to_menu_item(int font_size)
+{
+	switch (font_size)
+	{
+		case 9:  return 1;
+		case 10: return 2;
+		case 12: return 3;
+		case 14: return 4;
+		case 18: return 5;
+		case 24: return 6;
+		case 36: return 7;
+		default: return 1;
+	}
+}
+
+int menu_item_to_font_size(int menu_item)
+{
+	switch (menu_item)
+	{
+		case 1:  return 9;
+		case 2:  return 10;
+		case 3:  return 12;
+		case 4:  return 14;
+		case 5:  return 18;
+		case 6:  return 24;
+		case 7:  return 36;
+		default: return 9;
+	}
+}
+
 void preferences_window(void)
 {
 	// modal dialog setup
@@ -382,12 +412,17 @@ void preferences_window(void)
 	fg_color_menu = (ControlHandle)itemH;
 	SetControlValue(fg_color_menu, qd_color_to_menu_item(prefs.fg_color));
 
+	ControlHandle font_size_menu;
+	GetDialogItem(dlg, 10, &type, &itemH, &box);
+	font_size_menu = (ControlHandle)itemH;
+	SetControlValue(font_size_menu, font_size_to_menu_item(prefs.font_size));
+
 	// let the modalmanager do everything
 	// stop on ok or cancel
 	short item;
 	do {
 		ModalDialog(NULL, &item);
-	} while(item != 1 && item != 9);
+	} while(item != 1 && item != 11);
 
 	// save if OK'd
 	if (item == 1)
@@ -401,6 +436,14 @@ void preferences_window(void)
 
 		prefs.bg_color = menu_item_to_qd_color(GetControlValue(bg_color_menu));
 		prefs.fg_color = menu_item_to_qd_color(GetControlValue(fg_color_menu));
+		int new_font_size = menu_item_to_font_size(GetControlValue(font_size_menu));
+
+		// resize window if font size changed
+		if (new_font_size != prefs.font_size)
+		{
+			prefs.font_size = new_font_size;
+			font_size_change();
+		}
 
 		save_prefs();
 

@@ -763,6 +763,35 @@ const VTermScreenCallbacks vtscrcb =
 	.sb_popline = NULL
 };
 
+void font_size_change()
+{
+	clear_selection();
+
+	// don't clobber font settings
+	short save_font = qd.thePort->txFont;
+	short save_font_size = qd.thePort->txSize;
+	short save_font_face = qd.thePort->txFace;
+
+	TextFont(kFontIDMonaco);
+	TextSize(prefs.font_size);
+	TextFace(normal);
+
+	FontInfo fi = {0};
+	GetFontInfo(&fi);
+
+	con.cell_height = fi.ascent + fi.descent + fi.leading + 1;
+	font_offset = fi.descent;
+	con.cell_width = fi.widMax;
+
+	TextFont(save_font);
+	TextSize(save_font_size);
+	TextFace(save_font_face);
+
+	SizeWindow(con.win, con.cell_width * con.size_x + 4, con.cell_height * con.size_y + 4, true);
+	EraseRect(&(con.win->portRect));
+	InvalRect(&(con.win->portRect));
+}
+
 void console_setup(void)
 {
 	// don't clobber font settings

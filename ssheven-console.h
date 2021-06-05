@@ -24,3 +24,5 @@ void update_console_colors(void);
 size_t get_selection(char** selection);
 
 void clear_selection(void);
+
+void font_size_change(void);

@@ -96,6 +96,7 @@
 #define CNTL_PREF_FG_COLOR  128
 #define CNTL_PREF_BG_COLOR  129
 #define CNTL_PREF_TERM_TYPE 130
+#define CNTL_PREF_FONT_SIZE 131
 
 /* menus */
 #define MBAR_SSHEVEN   128
@@ -105,5 +106,6 @@
 #define MENU_EDIT      130
 #define MENU_COLOR     131
 #define MENU_TERM_TYPE 132
+#define MENU_FONT_SIZE 133
 
 #endif
