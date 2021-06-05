@@ -169,6 +169,12 @@ int save_prefs(void)
 	return ok;
 }
 
+// check if the main device is black and white
+int detect_color_screen(void)
+{
+	return TestDeviceAttribute(GetMainDevice(), gdDevType);
+}
+
 void init_prefs(void)
 {
 	// initialize everything to a safe default
@@ -189,7 +195,7 @@ void init_prefs(void)
 	prefs.privkey_path = "";
 	prefs.terminal_string = SSHEVEN_DEFAULT_TERM_STRING;
 	prefs.auth_type = USE_PASSWORD;
-	prefs.display_mode = COLOR;
+	prefs.display_mode = detect_color_screen() ? COLOR : FASTEST;
 	prefs.fg_color = blackColor;
 	prefs.bg_color = whiteColor;
 	prefs.font_size = 9;
