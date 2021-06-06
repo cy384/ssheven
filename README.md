@@ -19,9 +19,8 @@ system requirements
 roadmap
 -------
 0.9.0
-* general ssheven code cleanup
-* font face and size options
 * improve draw speed
+* general code cleanup
 
 1.0.0 (first "real" release)
 * nicer error presentation for more failure cases
@@ -31,12 +30,11 @@ roadmap
 * finish and upload papercraft box, floppy sticker artwork, icon/logo svg
 * configurable terminal string
 
-known bugs
+known problems
 * drawing the screen is wildly slow
 * input latency feels high because redrawing the screen is slow
 * receiving a large amount of data breaks the channel (e.g. `cat /dev/zero`)
 * non-US keyboard input has issues
-* custom colors are wonky
 
 possible upcoming features
 * scp file transfer
