@@ -781,7 +781,12 @@ void font_size_change()
 
 	con.cell_height = fi.ascent + fi.descent + fi.leading + 1;
 	font_offset = fi.descent;
-	con.cell_width = fi.widMax;
+
+	// you'd think this would be the correct way to determine character size
+	// but no
+	//con.cell_width = fi.widMax;
+
+	con.cell_width = CharWidth(' ');
 
 	TextFont(save_font);
 	TextSize(save_font_size);
