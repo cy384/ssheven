@@ -479,13 +479,13 @@ void draw_screen_color(Rect* r)
 			{
 				if (run_inverted)
 				{
-					BackColor(idx2qd[fg]);
-					ForeColor(idx2qd[bg]);
+					BackColor(idx2qd[run_fg]);
+					ForeColor(idx2qd[run_bg]);
 				}
 				else
 				{
-					BackColor(idx2qd[bg]);
-					ForeColor(idx2qd[fg]);
+					BackColor(idx2qd[run_bg]);
+					ForeColor(idx2qd[run_fg]);
 				}
 
 				EraseRect(&run_rect);
