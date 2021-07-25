@@ -1,6 +1,6 @@
-/* 
+/*
  * ssheven
- * 
+ *
  * Copyright (c) 2020 by cy384 <cy384@cy384.com>
  * See LICENSE file for details
  */
@@ -356,18 +356,6 @@ inline void draw_resize_corner(void)
 
 void draw_screen_color(Rect* r)
 {
-	// get the intersection of our console region and the update region
-	//Rect bounds = (con.win->portRect);
-	//SectRect(r, &bounds, r);
-
-	// right now we only call this function to redraw the entire screen
-	// so we don't need this (yet)
-	//short minRow = (0 > (r->top - bounds.top) / con.cell_height) ? 0 : (r->top - bounds.top) / con.cell_height;
-	//short maxRow = (con.size_y < (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height) ? con.size_y : (r->bottom - bounds.top + con.cell_height - 1) / con.cell_height;
-
-	//short minCol = (0 > (r->left - bounds.left) / con.cell_width) ? 0 : (r->left - bounds.left) / con.cell_width;
-	//short maxCol = (con.size_x < (r->right - bounds.left + con.cell_width - 1) / con.cell_width) ? con.size_x : (r->right - bounds.left + con.cell_width - 1) / con.cell_width;
-
 	// don't clobber font settings
 	short save_font      = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
@@ -375,31 +363,18 @@ void draw_screen_color(Rect* r)
 	short save_font_fg   = qd.thePort->fgColor;
 	short save_font_bg   = qd.thePort->bkColor;
 
-	short minRow = 0;
-	short maxRow = con.size_y;
-	short minCol = 0;
-	short maxCol = con.size_x;
-
 	TextFont(kFontIDMonaco);
 	TextSize(prefs.font_size);
 	TextFace(normal);
 	BackColor(prefs.bg_color);
 	ForeColor(prefs.fg_color);
+	TextMode(srcOr); // or mode is faster for some common cases
 
-	//EraseRect(&con.offscreen->portRect);
-
-	TextMode(srcOr);
-
-	short face = normal;
-	Rect cr;
-
-	ScreenCell* vtsc = NULL;
-	VTermPos pos = {.row = 0, .col = 0};
-
-	int i = 0;
 	int select_start = -1;
 	int select_end = -1;
+	int i = 0;
 
+	// only draw selection if we're not in clicky mode
 	if (con.mouse_mode == CLICK_SELECT)
 	{
 		if (con.mouse_state) update_selection_end();
@@ -422,57 +397,115 @@ void draw_screen_color(Rect* r)
 		}
 	}
 
-	char c = 0;
-	for(pos.row = minRow; pos.row < maxRow; pos.row++)
+	ScreenCell* vtsc = NULL;
+	ScreenCell* run_start = NULL;
+	VTermPos pos = {.row = 0, .col = 0};
+
+	char row_text[con.size_x];
+	Rect run_rect;
+	int vertical_offset = r->top + con.cell_height - font_offset + 2;
+	int run_start_col, run_length;
+	short run_face, next_face;
+	int run_inverted;
+	int run_fg, run_bg;
+
+	for (pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
-		for (pos.col = minCol; pos.col < maxCol; pos.col++)
+		pos.col = 0;
+		run_start = vterm_screen_unsafe_get_cell(con.vts, pos);
+		run_length = 0;
+		run_start_col = 0;
+
+		run_rect = cell_rect(0, pos.row, con.win->portRect);
+
+		run_inverted = run_start->pen.reverse ^ (i < select_end && i >= select_start);
+
+		run_fg = run_start->pen.fg.indexed.idx;
+		run_bg = run_start->pen.bg.indexed.idx;
+
+		run_face = normal;
+		if (run_start->pen.bold) run_face |= (condense|bold);
+		if (run_start->pen.italic) run_face |= (condense|italic);
+		if (run_start->pen.underline) run_face |= underline;
+
+		for (pos.col = 0; pos.col < con.size_x; pos.col++)
 		{
 			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-			c = (char)vtsc->chars[0];
 
-			if (vtsc->pen.reverse)
+			row_text[pos.col] = (char)vtsc->chars[0];
+			if (row_text[pos.col] == '\0') row_text[pos.col] = ' ';
+
+			next_face = normal;
+			if (vtsc->pen.bold) next_face |= (condense|bold);
+			if (vtsc->pen.italic) next_face |= (condense|italic);
+			if (vtsc->pen.underline) next_face |= underline;
+
+			// if we cannot add this cell to the run
+			if (vtsc->pen.fg.indexed.idx != run_fg || vtsc->pen.bg.indexed.idx != run_bg || next_face != run_face || (vtsc->pen.reverse ^ (i < select_end && i >= select_start)) != run_inverted)
 			{
-				BackColor(idx2qd[vtsc->pen.fg.indexed.idx]);
-				ForeColor(idx2qd[vtsc->pen.bg.indexed.idx]);
+				// draw what we've got so far
+				if (run_inverted)
+				{
+					BackColor(idx2qd[run_fg]);
+					ForeColor(idx2qd[run_bg]);
+				}
+				else
+				{
+					BackColor(idx2qd[run_bg]);
+					ForeColor(idx2qd[run_fg]);
+				}
+
+				EraseRect(&run_rect);
+				MoveTo(run_rect.left, vertical_offset);
+				TextFace(run_face);
+				DrawText(row_text, run_start_col, run_length);
+
+				// then reset everything to start a new run
+				run_inverted = vtsc->pen.reverse ^ (i < select_end && i >= select_start);
+				run_fg = vtsc->pen.fg.indexed.idx;
+				run_bg = vtsc->pen.bg.indexed.idx;
+				run_face = next_face;
+				run_start_col = pos.col;
+				run_rect = cell_rect(pos.col, pos.row, con.win->portRect);
+				run_length = 1;
 			}
 			else
 			{
-				ForeColor(idx2qd[vtsc->pen.fg.indexed.idx]);
-				BackColor(idx2qd[vtsc->pen.bg.indexed.idx]);
+				run_length++;
 			}
 
-			cr = cell_rect(pos.col, pos.row, *r);
-			EraseRect(&cr);
-
-			if (c == '\0' || c == ' ')
+			// if we're at the last cell in the row, draw the run
+			if (pos.col == con.size_x - 1)
 			{
-				if (i < select_end && i >= select_start)
+				if (run_inverted)
 				{
-					InvertRect(&cr);
+					BackColor(idx2qd[fg]);
+					ForeColor(idx2qd[bg]);
 				}
-				i++;
-				continue;
+				else
+				{
+					BackColor(idx2qd[bg]);
+					ForeColor(idx2qd[fg]);
+				}
+
+				EraseRect(&run_rect);
+				MoveTo(run_rect.left, vertical_offset);
+				TextFace(run_face);
+				DrawText(row_text, run_start_col, run_length);
 			}
-
-			face = normal;
-			if (vtsc->pen.bold) face |= (condense|bold);
-			if (vtsc->pen.italic) face |= (condense|italic);
-			if (vtsc->pen.underline) face |= underline;
-
-			TextFace(face);
-			draw_char(pos.col, pos.row, r, c);
-
-			if (i < select_end && i >= select_start)
+			else
 			{
-				InvertRect(&cr);
+				run_rect.right += con.cell_width;
 			}
+
 			i++;
 		}
+
+		vertical_offset += con.cell_height;
 	}
 
 	// do the cursor if needed
-	if (con.cursor_state == 1 &&
-		con.cursor_visible == 1)
+	if (con.cursor_state && con.cursor_visible)
 	{
 		Rect cursor = cell_rect(con.cursor_x, con.cursor_y, con.win->portRect);
 		InvertRect(&cursor);
