@@ -14,7 +14,7 @@ set_target_properties(ssheven PROPERTIES LINK_FLAGS "-Wl,-gc-sections -Wl,--mac-
 target_link_libraries(ssheven ssh2 mbedtls mbedx509 mbedcrypto OpenTransportApp OpenTransport OpenTptInet vterm retrocrt)
 ELSE()
 # for PPC
-set_target_properties(ssheven PROPERTIES COMPILE_FLAGS "-ffunction-sections -O3 -Wall -Wextra -Wno-unused-parameter")
+set_target_properties(ssheven PROPERTIES COMPILE_FLAGS "-ffunction-sections -mcpu=601 -O3 -Wall -Wextra -Wno-unused-parameter")
 set_target_properties(ssheven PROPERTIES LINK_FLAGS "-Wl,-gc-sections")
 target_link_libraries(ssheven ThreadsLib ssh2 mbedtls mbedx509 mbedcrypto OpenTransportAppPPC OpenTransportLib OpenTptInternetLib vterm retrocrt)
 ENDIF()
