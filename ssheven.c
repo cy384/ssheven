@@ -1151,69 +1151,9 @@ int safety_checks(void)
 	return 1;
 }
 
-int main(int argc, char** argv)
+void process_login(void)
 {
 	OSStatus err = noErr;
-
-	// expands the application heap to its maximum requested size
-	// supposedly good for performance
-	// also required before creating threads!
-	MaxApplZone();
-
-	// "Call the MoreMasters procedure several times at the beginning of your program"
-	MoreMasters();
-	MoreMasters();
-
-	// set default preferences, then load from preferences file if possible
-	init_prefs();
-	load_prefs();
-
-	// general gui setup
-	InitGraf(&qd.thePort);
-	InitFonts();
-	InitWindows();
-	InitMenus();
-
-	void* menu = GetNewMBar(MBAR_SSHEVEN);
-	SetMenuBar(menu);
-	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
-
-	// disable stuff in edit menu until we implement it
-	menu = GetMenuHandle(MENU_EDIT);
-	DisableItem(menu, 1);
-	DisableItem(menu, 3);
-	//DisableItem(menu, 4);
-	DisableItem(menu, 5);
-	DisableItem(menu, 6);
-	DisableItem(menu, 7);
-	DisableItem(menu, 9);
-
-	DrawMenuBar();
-
-	generate_key_mapping();
-
-	console_setup();
-
-	char* logo = "   _____ _____ _    _\r\n"
-		"  / ____/ ____| |  | |\r\n"
-		" | (___| (___ | |__| | _____   _____ _ __\r\n"
-		"  \\___ \\\\___ \\|  __  |/ _ \\ \\ / / _ \\ '_ \\\r\n"
-		"  ____) |___) | |  | |  __/\\ V /  __/ | | |\r\n"
-		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|\r\n";
-
-	printf_i(logo);
-	printf_i("by cy384, version " SSHEVEN_VERSION ", running in ");
-
-	#if defined(__ppc__)
-	printf_i("PPC mode.\r\n");
-	#else
-	printf_i("68k mode.\r\n");
-	#endif
-
-	BeginUpdate(con.win);
-	draw_screen(&(con.win->portRect));
-	EndUpdate(con.win);
-
 	int ok = 1;
 
 	ok = safety_checks();
@@ -1295,4 +1235,70 @@ int main(int argc, char** argv)
 		err = OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
 		CloseOpenTransport();
 	}
+}
+
+int main(int argc, char** argv)
+{
+	// OSStatus err = noErr;
+
+	// expands the application heap to its maximum requested size
+	// supposedly good for performance
+	// also required before creating threads!
+	MaxApplZone();
+
+	// "Call the MoreMasters procedure several times at the beginning of your program"
+	MoreMasters();
+	MoreMasters();
+
+	// set default preferences, then load from preferences file if possible
+	init_prefs();
+	load_prefs();
+
+	// general gui setup
+	InitGraf(&qd.thePort);
+	InitFonts();
+	InitWindows();
+	InitMenus();
+
+	void* menu = GetNewMBar(MBAR_SSHEVEN);
+	SetMenuBar(menu);
+	AppendResMenu(GetMenuHandle(MENU_APPLE), 'DRVR');
+
+	// disable stuff in edit menu until we implement it
+	menu = GetMenuHandle(MENU_EDIT);
+	DisableItem(menu, 1);
+	DisableItem(menu, 3);
+	//DisableItem(menu, 4);
+	DisableItem(menu, 5);
+	DisableItem(menu, 6);
+	DisableItem(menu, 7);
+	DisableItem(menu, 9);
+
+	DrawMenuBar();
+
+	generate_key_mapping();
+
+	console_setup();
+
+	char* logo = "   _____ _____ _    _\r\n"
+		"  / ____/ ____| |  | |\r\n"
+		" | (___| (___ | |__| | _____   _____ _ __\r\n"
+		"  \\___ \\\\___ \\|  __  |/ _ \\ \\ / / _ \\ '_ \\\r\n"
+		"  ____) |___) | |  | |  __/\\ V /  __/ | | |\r\n"
+		" |_____/_____/|_|  |_|\\___| \\_/ \\___|_| |_|\r\n";
+
+	printf_i(logo);
+	printf_i("by cy384, version " SSHEVEN_VERSION ", running in ");
+
+	#if defined(__ppc__)
+	printf_i("PPC mode.\r\n");
+	#else
+	printf_i("68k mode.\r\n");
+	#endif
+
+	BeginUpdate(con.win);
+	draw_screen(&(con.win->portRect));
+	EndUpdate(con.win);
+
+	process_login();
 }
