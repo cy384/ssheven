@@ -110,3 +110,4 @@ void set_window_title(WindowPtr w, const char* c_name);
 OSErr FSpPathFromLocation(FSSpec* spec, int* length, Handle* fullPath);
 
 pascal void ButtonFrameProc(DialogRef dlg, DialogItemIndex itemNo);
+void process_login(void);
