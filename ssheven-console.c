@@ -524,6 +524,7 @@ void erase_row(int i)
 {
 	Rect left = cell_rect(0, i, (con.win->portRect));
 	Rect right = cell_rect(con.size_x, i, (con.win->portRect));
+	right.right -= 8;
 
 	UnionRect(&left, &right, &left);
 	EraseRect(&left);
@@ -541,8 +542,8 @@ void draw_screen_fast(Rect* r)
 	TextFont(kFontIDMonaco);
 	TextSize(prefs.font_size);
 	TextFace(normal);
-	qd.thePort->bkColor = whiteColor;
-	qd.thePort->fgColor = blackColor;
+	qd.thePort->bkColor = prefs.bg_color;
+	qd.thePort->fgColor = prefs.fg_color;
 	TextMode(srcOr); // or mode is faster for drawing black on white
 
 	int select_start = -1;
@@ -804,6 +805,11 @@ void font_size_change()
 	short save_font = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
+	short save_font_fg   = qd.thePort->fgColor;
+	short save_font_bg   = qd.thePort->bkColor;
+
+	BackColor(prefs.bg_color);
+	ForeColor(prefs.fg_color);
 
 	TextFont(kFontIDMonaco);
 	TextSize(prefs.font_size);
@@ -828,6 +834,9 @@ void font_size_change()
 	SizeWindow(con.win, con.cell_width * con.size_x + 4, con.cell_height * con.size_y + 4, true);
 	EraseRect(&(con.win->portRect));
 	InvalRect(&(con.win->portRect));
+
+	BackColor(save_font_bg);
+	ForeColor(save_font_fg);
 }
 
 void console_setup(void)
@@ -836,6 +845,11 @@ void console_setup(void)
 	short save_font = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
+	short save_font_fg   = qd.thePort->fgColor;
+	short save_font_bg   = qd.thePort->bkColor;
+
+	BackColor(prefs.bg_color);
+	ForeColor(prefs.fg_color);
 
 	con.size_x = 80;
 	con.size_y = 24;
@@ -897,6 +911,9 @@ void console_setup(void)
 	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
 
 	setup_key_translation();
+
+	BackColor(save_font_bg);
+	ForeColor(save_font_fg);
 }
 
 // TODO: make this update all the cells with the default colors
