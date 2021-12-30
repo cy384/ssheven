@@ -2,7 +2,7 @@
 
 ssheven
 -------
-A modern SSH client for Mac OS 7/8/9.
+A minimal new SSH client for Mac OS 7/8/9.
 
 Project status: as of 0.8.0 ([see github releases](https://github.com/cy384/ssheven/releases)), fairly secure and usable, but without a polished UX or all planned features.  Versions prior to 1.0.0 should be considered alpha/beta quality.
 
