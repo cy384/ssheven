@@ -99,7 +99,7 @@ extern struct preferences prefs;
 extern char key_to_vterm[256];
 
 enum THREAD_COMMAND { WAIT, READ, EXIT };
-enum THREAD_STATE { UNINTIALIZED, OPEN, CLEANUP, DONE };
+enum THREAD_STATE { UNINITIALIZED, OPEN, CLEANUP, DONE };
 
 extern enum THREAD_COMMAND read_thread_command;
 extern enum THREAD_STATE read_thread_state;
@@ -110,4 +110,6 @@ void set_window_title(WindowPtr w, const char* c_name);
 OSErr FSpPathFromLocation(FSSpec* spec, int* length, Handle* fullPath);
 
 pascal void ButtonFrameProc(DialogRef dlg, DialogItemIndex itemNo);
-void process_login(void);
+
+int connect(void);
+void disconnect(void);

@@ -30,7 +30,7 @@ struct ssheven_ssh_connection ssh_con = { NULL, NULL, kOTInvalidEndpointRef, NUL
 struct preferences prefs;
 
 enum THREAD_COMMAND read_thread_command = WAIT;
-enum THREAD_STATE read_thread_state = UNINTIALIZED;
+enum THREAD_STATE read_thread_state = UNINITIALIZED;
 
 const uint8_t ascii_to_control_code[256] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 27, 28, 29, 30, 31, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
 
@@ -488,8 +488,13 @@ int process_menu_select(int32_t result)
 			break;
 
 		case MENU_FILE:
-			if (item == 1) preferences_window();
-			if (item == 3) exit = 1;
+			if (item == 1)
+			{
+				if (connect() == 0) disconnect();
+			}
+			if (item == 2) disconnect();
+			if (item == 4) preferences_window();
+			if (item == 6) exit = 1;
 			break;
 
 		case MENU_EDIT:
@@ -552,6 +557,15 @@ int handle_keypress(EventRecord* event)
 	{
 		switch (c)
 		{
+			case 'k':
+				if (read_thread_state == UNINITIALIZED || read_thread_state == DONE)
+				{
+					if (connect() == 0) disconnect();
+				}
+				break;
+			case 'd':
+				if (read_thread_state == OPEN) disconnect();
+				break;
 			case 'q':
 				return 1;
 				break;
@@ -1151,12 +1165,15 @@ int safety_checks(void)
 	return 1;
 }
 
-void process_login(void)
+int connect(void)
 {
 	OSStatus err = noErr;
 	int ok = 1;
 
 	ok = safety_checks();
+
+	// reset the console if we have any crap from earlier
+	if (read_thread_state == DONE) reset_console();
 
 	BeginUpdate(con.win);
 	draw_screen(&(con.win->portRect));
@@ -1205,13 +1222,23 @@ void process_login(void)
 	// if we got the thread, tell it to begin operation
 	if (ok) read_thread_command = READ;
 
-	// procede into our main event loop
-	event_loop();
+	// allow disconnecting if we're ok
+	if (ok)
+	{
+		void* menu = GetMenuHandle(MENU_FILE);
+		DisableItem(menu, 1);
+		EnableItem(menu, 2);
+	}
 
+	return ok;
+}
+
+void disconnect(void)
+{
 	// tell the read thread to finish, then let it run to actually do so
 	read_thread_command = EXIT;
 
-	if (read_thread_state != UNINTIALIZED)
+	if (read_thread_state != UNINITIALIZED)
 	{
 		while (read_thread_state != DONE)
 		{
@@ -1222,19 +1249,28 @@ void process_login(void)
 		}
 	}
 
-	if (ssh_con.recv_buffer != NULL) OTFreeMem(ssh_con.recv_buffer);
-	if (ssh_con.send_buffer != NULL) OTFreeMem(ssh_con.send_buffer);
-
-	if (prefs.pubkey_path != NULL && prefs.pubkey_path[0] != '\0') free(prefs.pubkey_path);
-	if (prefs.privkey_path != NULL && prefs.privkey_path[0] != '\0') free(prefs.privkey_path);
-
-	if (con.vterm != NULL) vterm_free(con.vterm);
+	if (ssh_con.recv_buffer != NULL)
+	{
+		OTFreeMem(ssh_con.recv_buffer);
+		ssh_con.recv_buffer = NULL;
+	}
+	if (ssh_con.send_buffer != NULL)
+	{
+		OTFreeMem(ssh_con.send_buffer);
+		ssh_con.send_buffer = NULL;
+	}
 
 	if (ssh_con.endpoint != kOTInvalidEndpointRef)
 	{
-		err = OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
+		OTCancelSynchronousCalls(ssh_con.endpoint, kOTCanceledErr);
 		CloseOpenTransport();
+		ssh_con.endpoint = kOTInvalidEndpointRef;
 	}
+
+	// allow connecting if we're disconnected
+	void* menu = GetMenuHandle(MENU_FILE);
+	EnableItem(menu, 1);
+	DisableItem(menu, 2);
 }
 
 int main(int argc, char** argv)
@@ -1274,6 +1310,11 @@ int main(int argc, char** argv)
 	DisableItem(menu, 7);
 	DisableItem(menu, 9);
 
+	// disable connect and disconnect
+	menu = GetMenuHandle(MENU_FILE);
+	DisableItem(menu, 1);
+	DisableItem(menu, 2);
+
 	DrawMenuBar();
 
 	generate_key_mapping();
@@ -1300,5 +1341,16 @@ int main(int argc, char** argv)
 	draw_screen(&(con.win->portRect));
 	EndUpdate(con.win);
 
-	process_login();
+	int ok = connect();
+
+	if (!ok) disconnect();
+
+	event_loop();
+
+	if (read_thread_command != EXIT) disconnect();
+
+	if (con.vterm != NULL) vterm_free(con.vterm);
+
+	if (prefs.pubkey_path != NULL && prefs.pubkey_path[0] != '\0') free(prefs.pubkey_path);
+	if (prefs.privkey_path != NULL && prefs.privkey_path[0] != '\0') free(prefs.privkey_path);
 }

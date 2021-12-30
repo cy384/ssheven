@@ -9,6 +9,7 @@
 
 #include "MacTypes.h"
 
+void reset_console(void);
 void console_setup(void);
 
 void draw_screen(Rect* r);

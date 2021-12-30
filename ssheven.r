@@ -454,6 +454,9 @@ resource 'MENU' (MENU_FILE) {
 	allEnabled, enabled;
 	"File";
 	{
+		"Connect...", noIcon, "K", noMark, plain;
+		"Disconnect", noIcon, "D", noMark, plain;
+		"-", noIcon, noKey, noMark, plain;
 		"Preferences...", noIcon, noKey, noMark, plain;
 		"-", noIcon, noKey, noMark, plain;
 		"Quit", noIcon, "Q", noMark, plain;

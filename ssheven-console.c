@@ -839,6 +839,40 @@ void font_size_change()
 	ForeColor(save_font_fg);
 }
 
+void reset_console(void)
+{
+	short save_fg = qd.thePort->fgColor;
+	short save_bg = qd.thePort->bkColor;
+
+	ForeColor(prefs.fg_color);
+	BackColor(prefs.bg_color);
+
+	EraseRect(&con.win->portRect);
+
+	ForeColor(save_fg);
+	BackColor(save_bg);
+
+	con.cursor_x = 0;
+	con.cursor_y = 0;
+
+	VTermState* vtermstate = vterm_obtain_state(con.vterm);
+	vterm_state_reset(vtermstate, 1);
+
+	VTermColor fg = { .type = VTERM_COLOR_INDEXED };
+	fg.indexed.idx = qd2idx(prefs.fg_color);
+
+	VTermColor bg  = { .type = VTERM_COLOR_INDEXED };
+	bg.indexed.idx = qd2idx(prefs.bg_color);
+
+	vterm_state_set_default_colors(vtermstate, &fg, &bg);
+
+	vterm_output_set_callback(con.vterm, output_callback, NULL);
+
+	con.vts = vterm_obtain_screen(con.vterm);
+	vterm_screen_reset(con.vts, 1);
+	vterm_screen_set_callbacks(con.vts, &vtscrcb, NULL);
+}
+
 void console_setup(void)
 {
 	// don't clobber font settings

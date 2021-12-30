@@ -579,7 +579,6 @@ void* read_thread(void* arg)
 			}
 			else printf_i("unexpected failure: %s\r\n", libssh2_error_string(rc));
 			ok = 0;
-			process_login();
 		}
 	}
 
