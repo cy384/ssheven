@@ -592,22 +592,31 @@ int handle_keypress(EventRecord* event)
 		}
 		else
 		{
-			// manually send an escape if we have alt option held
-			if (event->modifiers & optionKey)
+			// if we have alt and the character would be printable ascii, use it
+			if (event->modifiers & optionKey && c >= 32 && c <= 126)
 			{
-				ssh_con.send_buffer[0] = '\e';
+				ssh_con.send_buffer[0] = c;
 				ssh_write(ssh_con.send_buffer, 1);
-			}
-
-			if (key_to_vterm[c] != VTERM_KEY_NONE)
-			{
-				// doesn't seem like vterm does modifiers properly, so don't bother
-				vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
 			}
 			else
 			{
-				ssh_con.send_buffer[0] = event->modifiers & optionKey ? unmodified_key : c;
-				ssh_write(ssh_con.send_buffer, 1);
+				// otherwise manually send an escape if we have alt held
+				if (event->modifiers & optionKey)
+				{
+					ssh_con.send_buffer[0] = '\e';
+					ssh_write(ssh_con.send_buffer, 1);
+				}
+
+				if (key_to_vterm[c] != VTERM_KEY_NONE)
+				{
+					// doesn't seem like vterm does modifiers properly, so don't bother
+					vterm_keyboard_key(con.vterm, key_to_vterm[c], VTERM_MOD_NONE);
+				}
+				else
+				{
+					ssh_con.send_buffer[0] = event->modifiers & optionKey ? unmodified_key : c;
+					ssh_write(ssh_con.send_buffer, 1);
+				}
 			}
 		}
 	}
