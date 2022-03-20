@@ -237,6 +237,10 @@ void load_prefs(void)
 	prefs.pubkey_path[0] = '\0';
 	prefs.privkey_path[0] = '\0';
 
+	prefs.hostname[0] = 0;
+	prefs.username[0] = 0;
+	prefs.port[0] = 0;
+
 	e = FSRead(prefRefNum, &buffer_size, buffer);
 	e = FSClose(prefRefNum);
 
