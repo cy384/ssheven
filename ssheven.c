@@ -53,11 +53,11 @@ void generate_key_mapping(void)
 	}
 }
 
-void set_window_title(WindowPtr w, const char* c_name)
+void set_window_title(WindowPtr w, const char* c_name, size_t length)
 {
 	Str255 pascal_name;
 	strncpy((char *) &pascal_name[1], c_name, 254);
-	pascal_name[0] = strlen(c_name);
+	pascal_name[0] = length < 254 ? length : 254;
 
 	SetWTitle(w, pascal_name);
 }

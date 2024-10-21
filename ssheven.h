@@ -105,7 +105,7 @@ extern enum THREAD_COMMAND read_thread_command;
 extern enum THREAD_STATE read_thread_state;
 
 int save_prefs(void);
-void set_window_title(WindowPtr w, const char* c_name);
+void set_window_title(WindowPtr w, const char* c_name, size_t length);
 
 OSErr FSpPathFromLocation(FSSpec* spec, int* length, Handle* fullPath);
 
