@@ -6,6 +6,13 @@ RETRO68_PATH=change_me_please
 
 echo "Set your Retro68 build path in this script and delete this line!" && exit
 
+# check for nproc to count processors to build parallel
+BUILD_PARALLEL=
+if command -v nproc 2>&1 >/dev/null
+then
+  BUILD_PARALLEL="--parallel $(nproc)"
+fi
+
 ################################################################################
 echo "building PPC..."
 
@@ -13,7 +20,7 @@ rm -rf build-ppc
 mkdir build-ppc
 
 cmake -S . -B build-ppc -DCMAKE_TOOLCHAIN_FILE=$RETRO68_PATH/toolchain/powerpc-apple-macos/cmake/retroppc.toolchain.cmake
-cmake --build build-ppc
+cmake --build build-ppc $BUILD_PARALLEL
 
 ################################################################################
 echo "building m68k..."
@@ -22,7 +29,7 @@ rm -rf build-m68k
 mkdir build-m68k
 
 cmake -S . -B build-m68k -DCMAKE_TOOLCHAIN_FILE=$RETRO68_PATH/toolchain/m68k-apple-macos/cmake/retro68.toolchain.cmake
-cmake --build build-m68k
+cmake --build build-m68k $BUILD_PARALLEL
 
 ################################################################################
 echo "Rez-ing it all together..."
