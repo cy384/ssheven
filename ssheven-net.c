@@ -622,12 +622,11 @@ void* read_thread(void* arg)
 	// disallow pasting after connection is closed
 	DisableItem(menu, 5);
 
-    // If the remote server closes the client connection unexpectedly, call disconnect()
-    // to release memory and avoid the user having to manually select Disconnect and then
-    // Connect.. from the file menu.
+	// If the remote server closes the client connection unexpectedly, call disconnect()
+	// to release memory and avoid the user having to manually select Disconnect and then
+	// Connect.. from the file menu.
 
-    disconnect();
-
+	disconnect();
 
 	return 0;
 }
