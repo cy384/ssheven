@@ -1,0 +1,6 @@
+[submodule "opentransport-libssh2"]
+	path = opentransport-libssh2
+	url = git@github.com:cy384/opentransport-libssh2.git
+[submodule "opentransport-mbedtls"]
+	path = opentransport-mbedtls
+	url = git@github.com:cy384/opentransport-mbedtls.git
