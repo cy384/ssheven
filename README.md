@@ -16,13 +16,10 @@ system requirements
 * System 7.1 or later. Versions below 7.5 require the Thread Manager extension.
 * Open Transport networking required, latest version possible highly recommended.
 
-roadmap
--------
-0.9.0
+features that might happen
+--------------------------
+* improved unicode support
 * basic scp file transfer
-* general code cleanup
-
-1.0.0 (first "real" release)
 * configurable terminal string
 * configurable/auto-choosing SSH buffer size (improves feel for faster machines)
 * nicer error presentation for more failure cases
@@ -30,22 +27,23 @@ roadmap
 * read Apple HIG and clean up UI/UX
 * all license info in an about box type thing
 * finish and upload papercraft box, floppy sticker artwork, icon/logo svg
+* more complete color support
+* keyboard-interactive login
+* better debug output
+* multiple terminal windows open at once
 
 known problems
+--------------
 * drawing the screen is somewhat slow
 * input latency feels high because redrawing the screen is slow (along with all the encryption, which is also slow)
 * receiving a large amount of data may break the channel or cause lockups (e.g. `cat /dev/zero`)
 * non-US keyboard input may or may not have issues
 
-possible upcoming features
-* more complete color support (currently uses the default Mac 8 color palette)
-* keyboard-interactive authentication
-
 build
 -----
 Uses Retro68 and cmake.
 
-Requires mbedtls, libssh2, and libvterm, see my (cy384's) ports of those libraries for details.  Note that you need to build/install each for both platforms (m68k and PPC).
+Requires mbedtls, libssh2, and libvterm, see my (cy384's) ports of those libraries for details.  There are now pulled in as submodules, and everything should get built with a single CMake build.
 
 To build a fat binary, edit `build-ssheven.bash` with the path to your Retro68 build, and then run it.
 
