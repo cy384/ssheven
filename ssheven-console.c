@@ -18,6 +18,9 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
+// printable lozenge character in the Mac Roman encoding
+const char MAC_ROMAN_LOZENGE = 0xD7;
+
 char key_to_vterm[256] = { VTERM_KEY_NONE };
 
 int font_offset = 0;
@@ -206,16 +209,19 @@ void select_word(void)
 	point_to_cell(mouse, &pos.col, &pos.row);
 	pos.col++;
 
-	ScreenCell* vtsc = NULL;
 	char c;
+
+	VTermScreenCell vtsc = {0};
 
 	// scan backwards from mouse click point
 	while (!(pos.col == 0 && pos.row == 0))
 	{
 		prev(&pos.col, &pos.row);
 
-		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-		c = (char)vtsc->chars[0];
+		int ok = vterm_screen_get_cell(con.vts, pos, &vtsc);
+
+		// TODO FIXME not really unicode safe
+		c = (char)vtsc.chars[0];
 		if (c == '\0' || c == ' ')
 		{
 			next(&pos.col, &pos.row);
@@ -234,8 +240,10 @@ void select_word(void)
 	{
 		next(&pos.col, &pos.row);
 
-		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-		c = (char)vtsc->chars[0];
+		int ok = vterm_screen_get_cell(con.vts, pos, &vtsc);
+
+		// TODO FIXME not really unicode safe
+		c = (char)vtsc.chars[0];
 		if (c == '\0' || c == ' ')
 		{
 			break;
@@ -320,14 +328,16 @@ size_t get_selection(char** selection)
 	//int end_col = MAX(con.select_start_x, con.select_end_x);
 
 	VTermPos pos = {.row = start_row, .col = start_col-1};
-	ScreenCell* vtsc = NULL;
+	VTermScreenCell vtsc = {0};
 
 	for(int i = 0; i < len; i++)
 	{
 		next(&pos.col, &pos.row);
 
-		vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-		output[i] = (char)vtsc->chars[0];
+		int ok = vterm_screen_get_cell(con.vts, pos, &vtsc);
+
+		// TODO FIXME not really unicode safe
+		output[i] = (char)vtsc.chars[0];
 	}
 
 	output[len-1] = '\0';
@@ -397,8 +407,8 @@ void draw_screen_color(Rect* r)
 		}
 	}
 
-	ScreenCell* vtsc = NULL;
-	ScreenCell* run_start = NULL;
+	VTermScreenCell vtsc = {0};
+	VTermScreenCell run_start = {0};
 	VTermPos pos = {.row = 0, .col = 0};
 
 	char row_text[con.size_x];
@@ -408,40 +418,50 @@ void draw_screen_color(Rect* r)
 	short run_face, next_face;
 	int run_inverted;
 	int run_fg, run_bg;
+	int ok = 0;
 
 	for (pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
 		pos.col = 0;
-		run_start = vterm_screen_unsafe_get_cell(con.vts, pos);
+		ok = vterm_screen_get_cell(con.vts, pos, &run_start);
 		run_length = 0;
 		run_start_col = 0;
 
 		run_rect = cell_rect(0, pos.row, con.win->portRect);
 
-		run_inverted = run_start->pen.reverse ^ (i < select_end && i >= select_start);
+		run_inverted = run_start.attrs.reverse ^ (i < select_end && i >= select_start);
 
-		run_fg = run_start->pen.fg.indexed.idx;
-		run_bg = run_start->pen.bg.indexed.idx;
+		run_fg = run_start.fg.indexed.idx;
+		run_bg = run_start.bg.indexed.idx;
 
 		run_face = normal;
-		if (run_start->pen.bold) run_face |= (condense|bold);
-		if (run_start->pen.italic) run_face |= (condense|italic);
-		if (run_start->pen.underline) run_face |= underline;
+		if (run_start.attrs.bold) run_face |= (condense|bold);
+		if (run_start.attrs.italic) run_face |= (condense|italic);
+		if (run_start.attrs.underline) run_face |= underline;
 
 		for (pos.col = 0; pos.col < con.size_x; pos.col++)
 		{
-			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
+			ok = vterm_screen_get_cell(con.vts, pos, &vtsc);
 
-			row_text[pos.col] = (char)vtsc->chars[0];
-			if (row_text[pos.col] == '\0') row_text[pos.col] = ' ';
+			uint32_t glyph = vtsc.chars[0];
+
+			if (glyph == '\0') glyph = ' ';
+
+			// turn any non-ASCII into apples
+			if (glyph > 127)
+			{
+				glyph = MAC_ROMAN_LOZENGE;
+			}
+
+			row_text[pos.col] = glyph;
 
 			next_face = normal;
-			if (vtsc->pen.bold) next_face |= (condense|bold);
-			if (vtsc->pen.italic) next_face |= (condense|italic);
-			if (vtsc->pen.underline) next_face |= underline;
+			if (vtsc.attrs.bold) next_face |= (condense|bold);
+			if (vtsc.attrs.italic) next_face |= (condense|italic);
+			if (vtsc.attrs.underline) next_face |= underline;
 
 			// if we cannot add this cell to the run
-			if (vtsc->pen.fg.indexed.idx != run_fg || vtsc->pen.bg.indexed.idx != run_bg || next_face != run_face || (vtsc->pen.reverse ^ (i < select_end && i >= select_start)) != run_inverted)
+			if (vtsc.fg.indexed.idx != run_fg || vtsc.bg.indexed.idx != run_bg || next_face != run_face || (vtsc.attrs.reverse ^ (i < select_end && i >= select_start)) != run_inverted)
 			{
 				// draw what we've got so far
 				if (run_inverted)
@@ -461,9 +481,9 @@ void draw_screen_color(Rect* r)
 				DrawText(row_text, run_start_col, run_length);
 
 				// then reset everything to start a new run
-				run_inverted = vtsc->pen.reverse ^ (i < select_end && i >= select_start);
-				run_fg = vtsc->pen.fg.indexed.idx;
-				run_bg = vtsc->pen.bg.indexed.idx;
+				run_inverted = vtsc.attrs.reverse ^ (i < select_end && i >= select_start);
+				run_fg = vtsc.fg.indexed.idx;
+				run_bg = vtsc.bg.indexed.idx;
 				run_face = next_face;
 				run_start_col = pos.col;
 				run_rect = cell_rect(pos.col, pos.row, con.win->portRect);
@@ -572,25 +592,39 @@ void draw_screen_fast(Rect* r)
 		}
 	}
 
-	ScreenCell* vtsc = NULL;
 	VTermPos pos = {.row = 0, .col = 0};
 
 	char row_text[con.size_x];
 	char row_invert[con.size_x];
 	Rect cr;
 
+	VTermScreenCell here = {0};
+
 	int vertical_offset = r->top + con.cell_height - font_offset + 2;
 
-	for(pos.row = 0; pos.row < con.size_y; pos.row++)
+	for (pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
 		erase_row(pos.row);
 
 		for (pos.col = 0; pos.col < con.size_x; pos.col++)
 		{
-			vtsc = vterm_screen_unsafe_get_cell(con.vts, pos);
-			row_text[pos.col] = (char)vtsc->chars[0];
-			if (row_text[pos.col] == '\0') row_text[pos.col] = ' ';
-			row_invert[pos.col] = vtsc->pen.reverse ^ (i < select_end && i >= select_start);
+			int ret = vterm_screen_get_cell(con.vts, pos, &here);
+
+			uint32_t glyph = here.chars[0];
+
+			if (glyph == '\0') glyph = ' ';
+
+			// turn any non-ASCII into apples
+			if (glyph > 127)
+			{
+				glyph = MAC_ROMAN_LOZENGE;
+			}
+
+			row_text[pos.col] = glyph;
+
+			bool invert = here.attrs.reverse ^ (i < select_end && i >= select_start);
+			row_invert[pos.col] = invert;
+
 			i++;
 		}
 
@@ -926,7 +960,7 @@ void console_setup(void)
 	con.cursor_y = 0;
 
 	con.vterm = vterm_new(con.size_y, con.size_x);
-	vterm_set_utf8(con.vterm, 0);
+	vterm_set_utf8(con.vterm, 1);
 	VTermState* vtermstate = vterm_obtain_state(con.vterm);
 	vterm_state_reset(vtermstate, 1);
 
