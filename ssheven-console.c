@@ -791,7 +791,7 @@ int settermprop(VTermProp prop, VTermValue *val, void *user)
 	switch (prop)
 	{
 		case VTERM_PROP_TITLE: // string
-			set_window_title(con.win, val->string);
+			set_window_title(con.win, val->string.str, val->string.len);
 			return 1;
 		case VTERM_PROP_CURSORVISIBLE: // bool
 			con.cursor_visible = val->boolean;
