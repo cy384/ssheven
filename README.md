@@ -41,11 +41,11 @@ known problems
 
 build
 -----
-Uses Retro68 and cmake.
+Uses [Retro68](https://github.com/autc04/Retro68/) (requires the Universal headers) and cmake.
 
-Requires mbedtls, libssh2, and libvterm, see my (cy384's) ports of those libraries for details.  There are now pulled in as submodules, and everything should get built with a single CMake build.
+Requires mbedtls, libssh2, and libvterm, see my (cy384's) hackjobs of those libraries for details.  These are now pulled in as submodules, and everything should get built with a single CMake build.
 
-To build a fat binary, edit `build-ssheven.bash` with the path to your Retro68 build, and then run it.
+The script `build-ssheven.bash` can be used to build a fat binary, or just as reference for build commands.
 
 license
 -------
