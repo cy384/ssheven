@@ -10,7 +10,7 @@ add_application(ssheven CREATOR "SSH7" ssheven.c ssheven-console.c ssheven.r ssh
 
 # set up and build mbedtls
 set(ENABLE_PROGRAMS OFF CACHE BOOL "disable mbedtls programs" FORCE)
-set(UNSAFE_BUILD ON CACHE BOOL "ignore mac os jank fro mbedtls" FORCE)
+set(UNSAFE_BUILD ON CACHE BOOL "ignore mac os jank for mbedtls" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "disable mbedtls tests" FORCE)
 add_subdirectory(opentransport-mbedtls)
 
@@ -21,6 +21,9 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "disable libssh2 examples" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "disable libssh2 tests" FORCE)
 add_subdirectory(opentransport-libssh2)
 
+# set up and build libvterm
+add_subdirectory(libvterm)
+
 IF(CMAKE_SYSTEM_NAME MATCHES Retro68)
 # for 68k
   set_target_properties(ssheven PROPERTIES COMPILE_FLAGS "-ffunction-sections -mcpu=68020 -O3 -Wall -Wextra -Wno-unused-parameter")
@@ -30,5 +33,5 @@ ELSE()
 # for PPC
   set_target_properties(ssheven PROPERTIES COMPILE_FLAGS "-ffunction-sections -mcpu=601 -O3 -Wall -Wextra -Wno-unused-parameter")
   set_target_properties(ssheven PROPERTIES LINK_FLAGS "-Wl,-gc-sections")
-  target_link_libraries(ssheven ThreadsLib ssh2 mbedtls mbedx509 mbedcrypto OpenTransportAppPPC OpenTransportLib OpenTptInternetLib vterm retrocrt)
+  target_link_libraries(ssheven ThreadsLib libssh2 mbedtls mbedx509 mbedcrypto OpenTransportAppPPC OpenTransportLib OpenTptInternetLib vterm retrocrt)
 ENDIF()

@@ -1,3 +1,5 @@
 build-fat/
 build-m68k/
 build-ppc/
+build/
+.vscode/

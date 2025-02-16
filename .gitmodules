@@ -4,3 +4,6 @@
 [submodule "opentransport-mbedtls"]
 	path = opentransport-mbedtls
 	url = git@github.com:cy384/opentransport-mbedtls.git
+[submodule "libvterm"]
+	path = libvterm
+	url = git@github.com:cy384/cy384/libvterm
