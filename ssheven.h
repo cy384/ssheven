@@ -24,17 +24,17 @@ struct ssheven_console
 {
 	WindowPtr win;
 
-	int size_x;
-	int size_y;
+	short size_x;
+	short size_y;
 
 	int cursor_x;
 	int cursor_y;
 
-	int cell_height;
-	int cell_width;
+	short cell_height;
+	short cell_width;
 
 	int cursor_state;
-	long int last_cursor_blink;
+	uint32_t last_cursor_blink;
 	int cursor_visible;
 
 	int select_start_x;
@@ -91,7 +91,7 @@ struct preferences
 	int fg_color;
 	int bg_color;
 
-	int font_size;
+	short font_size;
 };
 
 extern struct preferences prefs;

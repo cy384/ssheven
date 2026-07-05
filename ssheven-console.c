@@ -75,7 +75,7 @@ void print_string(const char* c)
 
 inline void draw_char(int x, int y, Rect* r, char c)
 {
-	MoveTo(r->left + 2 + x * con.cell_width, r->top + 2 - font_offset + ((y+1) * con.cell_height));
+	MoveTo((short)(r->left + 2 + x * con.cell_width), (short)(r->top + 2 - font_offset + ((y+1) * con.cell_height)));
 	DrawChar(c);
 }
 
@@ -88,7 +88,7 @@ void toggle_cursor(void)
 
 void check_cursor(void)
 {
-	long unsigned int now = TickCount();
+	uint32_t now = TickCount();
 	if ((now - con.last_cursor_blink) > GetCaretTime())
 	{
 		toggle_cursor();
@@ -97,7 +97,7 @@ void check_cursor(void)
 }
 
 // convert Quickdraw colors into vterm's ANSI color indexes
-int qd2idx(int qdc)
+uint8_t qd2idx(int qdc)
 {
 	switch (qdc)
 	{
@@ -314,12 +314,12 @@ size_t get_selection(char** selection)
 		*selection = NULL;
 		return 0;
 	}
-	int a = con.select_start_x + con.select_start_y * con.size_x;
-	int b = con.select_end_x + con.select_end_y * con.size_x;
+	size_t a = (size_t)(con.select_start_x + con.select_start_y * con.size_x);
+	size_t b = (size_t)(con.select_end_x + con.select_end_y * con.size_x);
 
-	ssize_t len = MAX(a,b) - MIN(a,b) + 1;
+	size_t len = MAX(a,b) - MIN(a,b) + 1;
 
-	char* output = malloc(sizeof(char) * len);
+	char* output = malloc(len);
 
 	int start_row = MIN(con.select_start_y, con.select_end_y);
 	int start_col = MIN(con.select_start_x, con.select_end_x);
@@ -329,7 +329,7 @@ size_t get_selection(char** selection)
 	VTermPos pos = {.row = start_row, .col = start_col-1};
 	VTermScreenCell vtsc = {0};
 
-	for(int i = 0; i < len; i++)
+	for(size_t i = 0; i < len; i++)
 	{
 		next(&pos.col, &pos.row);
 
@@ -369,11 +369,11 @@ void draw_screen_color(Rect* r)
 	short save_font      = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
-	short save_font_fg   = qd.thePort->fgColor;
-	short save_font_bg   = qd.thePort->bkColor;
+	long save_font_fg   = qd.thePort->fgColor;
+	long save_font_bg   = qd.thePort->bkColor;
 
 	TextFont(kFontIDMonaco);
-	TextSize(prefs.font_size);
+	TextSize(prefs.font_size); // fn takes short
 	TextFace(normal);
 	BackColor(prefs.bg_color);
 	ForeColor(prefs.fg_color);
@@ -412,8 +412,8 @@ void draw_screen_color(Rect* r)
 
 	char row_text[con.size_x];
 	Rect run_rect;
-	int vertical_offset = r->top + con.cell_height - font_offset + 2;
-	int run_start_col, run_length;
+	short vertical_offset = (short)(r->top + con.cell_height - font_offset + 2);
+	short run_start_col, run_length;
 	short run_face, next_face;
 	int run_inverted;
 	int run_fg, run_bg;
@@ -451,15 +451,15 @@ void draw_screen_color(Rect* r)
 			{
 				if (glyph <= 0xFFFF)
 				{
-					glyph = UNICODE_BMP_NORMALIZER[glyph];
+					glyph = (uint32_t)UNICODE_BMP_NORMALIZER[glyph];
 				}
 				else
 				{
-					glyph = MAC_ROMAN_LOZENGE;
+					glyph = (uint32_t)MAC_ROMAN_LOZENGE;
 				}
 			}
 
-			row_text[pos.col] = glyph;
+			row_text[pos.col] = (char)(glyph & 0xFF);
 
 			next_face = normal;
 			if (vtsc.attrs.bold) next_face |= (condense|bold);
@@ -491,7 +491,7 @@ void draw_screen_color(Rect* r)
 				run_fg = vtsc.fg.indexed.idx;
 				run_bg = vtsc.bg.indexed.idx;
 				run_face = next_face;
-				run_start_col = pos.col;
+				run_start_col = (short)pos.col;
 				run_rect = cell_rect(pos.col, pos.row, con.win->portRect);
 				run_length = 1;
 			}
@@ -562,8 +562,8 @@ void draw_screen_fast(Rect* r)
 	short save_font      = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
-	short save_font_fg   = qd.thePort->fgColor;
-	short save_font_bg   = qd.thePort->bkColor;
+	long save_font_fg   = qd.thePort->fgColor;
+	long save_font_bg   = qd.thePort->bkColor;
 
 	TextFont(kFontIDMonaco);
 	TextSize(prefs.font_size);
@@ -606,7 +606,7 @@ void draw_screen_fast(Rect* r)
 
 	VTermScreenCell here = {0};
 
-	int vertical_offset = r->top + con.cell_height - font_offset + 2;
+	short vertical_offset = (short)(r->top + con.cell_height - font_offset + 2);
 
 	for (pos.row = 0; pos.row < con.size_y; pos.row++)
 	{
@@ -625,15 +625,15 @@ void draw_screen_fast(Rect* r)
 			{
 				if (glyph <= 0xFFFF)
 				{
-					glyph = UNICODE_BMP_NORMALIZER[glyph];
+					glyph = (uint32_t)UNICODE_BMP_NORMALIZER[glyph];
 				}
 				else
 				{
-					glyph = MAC_ROMAN_LOZENGE;
+					glyph = (uint32_t)MAC_ROMAN_LOZENGE;
 				}
 			}
 
-			row_text[pos.col] = glyph;
+			row_text[pos.col] = (char)(glyph & 0xFF);
 
 			bool invert = here.attrs.reverse ^ (i < select_end && i >= select_start);
 			row_invert[pos.col] = invert;
@@ -852,8 +852,8 @@ void font_size_change()
 	short save_font = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
-	short save_font_fg   = qd.thePort->fgColor;
-	short save_font_bg   = qd.thePort->bkColor;
+	long save_font_fg   = qd.thePort->fgColor;
+	long save_font_bg   = qd.thePort->bkColor;
 
 	BackColor(prefs.bg_color);
 	ForeColor(prefs.fg_color);
@@ -865,7 +865,7 @@ void font_size_change()
 	FontInfo fi = {0};
 	GetFontInfo(&fi);
 
-	con.cell_height = fi.ascent + fi.descent + fi.leading + 1;
+	con.cell_height = (short)(fi.ascent + fi.descent + fi.leading + 1);
 	font_offset = fi.descent;
 
 	// you'd think this would be the correct way to determine character size
@@ -878,7 +878,7 @@ void font_size_change()
 	TextSize(save_font_size);
 	TextFace(save_font_face);
 
-	SizeWindow(con.win, con.cell_width * con.size_x + 4, con.cell_height * con.size_y + 4, true);
+	SizeWindow(con.win, (short)(con.cell_width * con.size_x + 4), (short)(con.cell_height * con.size_y + 4), true);
 	EraseRect(&(con.win->portRect));
 	InvalRect(&(con.win->portRect));
 
@@ -888,8 +888,8 @@ void font_size_change()
 
 void reset_console(void)
 {
-	short save_fg = qd.thePort->fgColor;
-	short save_bg = qd.thePort->bkColor;
+	long save_fg = qd.thePort->fgColor;
+	long save_bg = qd.thePort->bkColor;
 
 	ForeColor(prefs.fg_color);
 	BackColor(prefs.bg_color);
@@ -926,8 +926,8 @@ void console_setup(void)
 	short save_font = qd.thePort->txFont;
 	short save_font_size = qd.thePort->txSize;
 	short save_font_face = qd.thePort->txFace;
-	short save_font_fg   = qd.thePort->fgColor;
-	short save_font_bg   = qd.thePort->bkColor;
+	long save_font_fg   = qd.thePort->fgColor;
+	long save_font_bg   = qd.thePort->bkColor;
 
 	BackColor(prefs.bg_color);
 	ForeColor(prefs.fg_color);
@@ -942,7 +942,7 @@ void console_setup(void)
 	FontInfo fi = {0};
 	GetFontInfo(&fi);
 
-	con.cell_height = fi.ascent + fi.descent + fi.leading + 1;
+	con.cell_height = (short)(fi.ascent + fi.descent + fi.leading + 1);
 	font_offset = fi.descent;
 	con.cell_width = CharWidth(' ');
 
@@ -955,8 +955,8 @@ void console_setup(void)
 	InsetRect(&initial_window_bounds, 20, 20);
 	initial_window_bounds.top += 40;
 
-	initial_window_bounds.bottom = initial_window_bounds.top + con.cell_height * con.size_y + 4;
-	initial_window_bounds.right = initial_window_bounds.left + con.cell_width * con.size_x + 4;
+	initial_window_bounds.bottom = (short)(initial_window_bounds.top + con.cell_height * con.size_y + 4);
+	initial_window_bounds.right = (short)(initial_window_bounds.left + con.cell_width * con.size_x + 4);
 
 	ConstStr255Param title = "\pssheven " SSHEVEN_VERSION;
 

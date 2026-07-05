@@ -33,13 +33,13 @@ void ssh_write(char* buf, size_t len)
 // read from the channel and print to console
 void ssh_read(void)
 {
-	ssize_t rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
+	size_t rc = libssh2_channel_read(ssh_con.channel, ssh_con.recv_buffer, SSHEVEN_BUFFER_SIZE);
 
 	if (rc == 0) return;
 
 	if (rc <= 0)
 	{
-		printf_i("channel read error: %s\r\n", libssh2_error_string(rc));
+		printf_i("channel read error: %s\r\n", libssh2_error_string((int)rc));
 		read_thread_command = EXIT;
 	}
 
@@ -220,8 +220,8 @@ char* known_hosts_full_path(int* found)
 	int path_length;
 
 	FSpPathFromLocation(&known_hosts_file, &path_length, &full_path_handle);
-	char* full_path = malloc(path_length+1);
-	strncpy(full_path, (char*)(*full_path_handle), path_length+1);
+	char* full_path = malloc((size_t)(path_length+1));
+	strncpy(full_path, (char*)(*full_path_handle), (size_t)(path_length+1));
 	DisposeHandle(full_path_handle);
 
 	return full_path;
@@ -497,7 +497,7 @@ int init_connection(char* hostname)
 	libssh2_session_callback_set2(ssh_con.session, LIBSSH2_CALLBACK_RECV, (libssh2_cb_generic*)network_recv_callback);
 	libssh2_session_callback_set2(ssh_con.session, LIBSSH2_CALLBACK_DISCONNECT, (libssh2_cb_generic*)network_recv_callback);
 
-	long s = TickCount();
+	long unsigned s = TickCount();
 	printf_i("Beginning SSH session handshake... "); YieldToAnyThread();
 	SSH_CHECK(libssh2_session_handshake(ssh_con.session, 0));
 
@@ -553,7 +553,7 @@ void* read_thread(void* arg)
 		{
 			rc = libssh2_userauth_publickey_fromfile_ex(ssh_con.session,
 				prefs.username+1,
-				prefs.username[0],
+				(unsigned int)(prefs.username[0]),
 				prefs.pubkey_path,
 				prefs.privkey_path,
 				prefs.password+1);

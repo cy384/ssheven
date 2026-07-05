@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 // printable lozenge character in the Mac Roman encoding
-const char MAC_ROMAN_LOZENGE = 0xD7;
+const char MAC_ROMAN_LOZENGE = '\xD7';
 
 #define LOZENGE_STR "\xD7"
 
