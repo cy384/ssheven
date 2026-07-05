@@ -177,6 +177,8 @@ int detect_color_screen(void)
 
 void init_prefs(void)
 {
+	memset(&prefs, 0, sizeof(prefs));
+
 	// initialize everything to a safe default
 	prefs.major_version = SSHEVEN_VERSION_MAJOR;
 	prefs.minor_version = SSHEVEN_VERSION_MINOR;
@@ -238,8 +240,11 @@ void load_prefs(void)
 	prefs.privkey_path[0] = '\0';
 
 	prefs.hostname[0] = 0;
+	prefs.hostname[1] = 0;
 	prefs.username[0] = 0;
+	prefs.username[1] = 0;
 	prefs.port[0] = 0;
+	prefs.port[1] = 0;
 
 	e = FSRead(prefRefNum, &buffer_size, (void*)buffer);
 	e = FSClose(prefRefNum);
@@ -1045,15 +1050,15 @@ int intro_dialog(void)
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
-	GetDialogItemText((Handle)address_text_box, (unsigned char *)prefs.hostname);
-	GetDialogItemText((Handle)username_text_box, (unsigned char *)prefs.username);
+	GetDialogItemText((Handle)address_text_box, prefs.hostname);
+	GetDialogItemText((Handle)username_text_box, prefs.username);
 
-	GetDialogItemText((Handle)port_text_box, (unsigned char *)prefs.hostname+prefs.hostname[0]+1);
+	GetDialogItemText((Handle)port_text_box, prefs.hostname+prefs.hostname[0]+1);
 	prefs.hostname[prefs.hostname[0]+1] = ':';
 
-	char* port_start = prefs.hostname+prefs.hostname[0] + 2;
+	char* port_start = prefs.hostname + prefs.hostname[0] + 2;
+	strncpy(port_start, prefs.port+1, 255);
 	prefs.port[0] = (char)strlen(port_start);
-	strncpy(prefs.port+1, port_start, 255);
 
 	int use_password = GetControlValue(password_radio);
 
