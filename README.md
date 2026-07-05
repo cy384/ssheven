@@ -38,6 +38,7 @@ known problems
 * input latency feels high because redrawing the screen is slow (along with all the encryption, which is also slow)
 * receiving a large amount of data may break the channel or cause lockups (e.g. `cat /dev/zero`)
 * non-US keyboard input may or may not have issues
+* [how do you pronounce ssheven?](https://github.com/cy384/ssheven/issues/8)
 
 build
 -----
