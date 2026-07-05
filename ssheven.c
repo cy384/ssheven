@@ -1057,7 +1057,7 @@ int intro_dialog(void)
 	prefs.hostname[prefs.hostname[0]+1] = ':';
 
 	char* port_start = prefs.hostname + prefs.hostname[0] + 2;
-	strncpy(port_start, prefs.port+1, 255);
+	strncpy(port_start, prefs.port+1, 254);
 	prefs.port[0] = (char)strlen(port_start);
 
 	int use_password = GetControlValue(password_radio);
