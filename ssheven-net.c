@@ -325,7 +325,7 @@ int known_hosts(void)
 		}
 
 		DisposeDialog(dlg);
-		FlushEvents(everyEvent, -1);
+		FlushEvents(everyEvent, 0);
 
 		printf_i("Saving host and key... ");
 

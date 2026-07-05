@@ -466,7 +466,7 @@ void preferences_window(void)
 
 	// clean it up
 	DisposeDialog(dlg);
-	FlushEvents(everyEvent, -1);
+	FlushEvents(everyEvent, 0);
 }
 
 // returns 1 if quit selected, else 0
@@ -1059,7 +1059,7 @@ int intro_dialog(void)
 
 	// clean it up
 	DisposeDialog(dlg);
-	FlushEvents(everyEvent, -1);
+	FlushEvents(everyEvent, 0);
 
 	// if we hit cancel, 0
 	if (item == 8) return 0;
