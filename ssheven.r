@@ -422,9 +422,11 @@ resource 'FREF' (SSHEVEN_APPLICATION_ICON, purgeable) {
 };
 
 /* preferences file -> icon relation */
-resource 'FREF' (SSHEVEN_FILE_ICON, purgeable) {
+/*resource 'FREF' (SSHEVEN_FILE_ICON, purgeable) {
 	'SH7p', 1, ""
-};
+};*/
+// supposed to use 'pref' instead
+// see TN1134
 
 resource 'BNDL' (128, purgeable) {
 	'SSH7', 0,

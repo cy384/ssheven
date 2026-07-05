@@ -94,7 +94,7 @@ int save_prefs(void)
 	FSSpec pref_file;
 	short prefRefNum = 0;
 
-	OSType pref_type = 'SH7p';
+	OSType pref_type = 'pref';
 	OSType creator_type = 'SSH7';
 
 	// find the preferences folder on the system disk, create folder if needed
