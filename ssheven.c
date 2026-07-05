@@ -229,9 +229,9 @@ void load_prefs(void)
 	if (e != noErr) return;
 
 	// actually read and parse the file
-	long int buffer_size = 8192;
+	long buffer_size = 8192;
 	char* buffer = NULL;
-	buffer = malloc(buffer_size);
+	buffer = malloc((size_t)buffer_size);
 	prefs.privkey_path = malloc(2048);
 	prefs.pubkey_path = malloc(2048);
 	prefs.pubkey_path[0] = '\0';
@@ -241,7 +241,7 @@ void load_prefs(void)
 	prefs.username[0] = 0;
 	prefs.port[0] = 0;
 
-	e = FSRead(prefRefNum, &buffer_size, buffer);
+	e = FSRead(prefRefNum, &buffer_size, (void*)buffer);
 	e = FSClose(prefRefNum);
 
 	// check the version (first two numbers)
@@ -302,11 +302,11 @@ void ssh_paste(void)
 	// GetScrap requires a handle, not a raw buffer
 	// it will increase the size of the handle if needed
 	Handle buf = NewHandle(256);
-	int r = GetScrap(buf, 'TEXT', 0);
+	long r = GetScrap(buf, 'TEXT', 0);
 
 	if (r > 0)
 	{
-		ssh_write(*buf, r);
+		ssh_write(*buf, (size_t)r);
 	}
 
 	DisposeHandle(buf);
@@ -318,14 +318,14 @@ void ssh_copy(void)
 	size_t len = get_selection(&selection);
 	if (selection == NULL || len == 0) return;
 
-	OSErr e = ZeroScrap();
+	OSStatus e = ZeroScrap();
 	if (e != noErr) printf_i("Failed to ZeroScrap!");
 
-	e = PutScrap(len, 'TEXT', selection);
+	e = PutScrap((unsigned long)len, 'TEXT', selection);
 	if (e != noErr) printf_i("Failed to PutScrap!");
 }
 
-int qd_color_to_menu_item(int qd_color)
+short qd_color_to_menu_item(int qd_color)
 {
 	switch (qd_color)
 	{
@@ -357,7 +357,7 @@ int menu_item_to_qd_color(int menu_item)
 	}
 }
 
-int font_size_to_menu_item(int font_size)
+short font_size_to_menu_item(int font_size)
 {
 	switch (font_size)
 	{
@@ -372,7 +372,7 @@ int font_size_to_menu_item(int font_size)
 	}
 }
 
-int menu_item_to_font_size(int menu_item)
+short menu_item_to_font_size(int menu_item)
 {
 	switch (menu_item)
 	{
@@ -410,7 +410,7 @@ void preferences_window(void)
 	ControlHandle term_type_menu;
 	GetDialogItem(dlg, 6, &type, &itemH, &box);
 	term_type_menu = (ControlHandle)itemH;
-	SetControlValue(term_type_menu, prefs.display_mode + 1);
+	SetControlValue(term_type_menu, (short)(prefs.display_mode + 1));
 
 	ControlHandle bg_color_menu;
 	GetDialogItem(dlg, 7, &type, &itemH, &box);
@@ -446,7 +446,7 @@ void preferences_window(void)
 
 		prefs.bg_color = menu_item_to_qd_color(GetControlValue(bg_color_menu));
 		prefs.fg_color = menu_item_to_qd_color(GetControlValue(fg_color_menu));
-		int new_font_size = menu_item_to_font_size(GetControlValue(font_size_menu));
+		short new_font_size = menu_item_to_font_size(GetControlValue(font_size_menu));
 
 		// resize window if font size changed
 		if (new_font_size != prefs.font_size)
@@ -470,10 +470,10 @@ void preferences_window(void)
 }
 
 // returns 1 if quit selected, else 0
-int process_menu_select(int32_t result)
+int process_menu_select(long result)
 {
 	int exit = 0;
-	int16_t menu = (result & 0xFFFF0000) >> 16;
+	int16_t menu = ((result & 0xFFFF0000) >> 16);
 	int16_t item = (result & 0x0000FFFF);
 	Str255 name;
 
@@ -537,8 +537,8 @@ void resize_con_window(WindowPtr eventWin, EventRecord event)
 		int width = growResult & 0xFFFF;
 
 		// 'snap' to a size that won't have extra pixels not in a cell
-		int next_height = height - ((height - 4) % con.cell_height);
-		int next_width = width - ((width - 4) % con.cell_width);
+		short next_height = height - ((height - 4) % con.cell_height);
+		short next_width = width - ((width - 4) % con.cell_width);
 
 		SizeWindow(eventWin, next_width, next_height, true);
 		EraseRect(&(con.win->portRect));
@@ -637,7 +637,7 @@ void event_loop(void)
 
 	// maximum length of time to sleep (in ticks)
 	// GetCaretTime gets the number of ticks between system caret on/off time
-	long int sleep_time = GetCaretTime() / 4;
+	unsigned long sleep_time = GetCaretTime() / 4;
 
 	do
 	{
@@ -731,7 +731,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 	Rect box;
 
 	// TODO: this should be declared somewhere? include it?
-	int kVisualDelay = 8;
+	unsigned long kVisualDelay = 8;
 
 	if (event->what == keyDown || event->what == autoKey)
 	{
@@ -791,7 +791,7 @@ pascal Boolean TwoItemFilter(DialogPtr dlog, EventRecord *event, short *itemHit)
 
 // from the ATS password sample code
 // 1 for ok, 0 for cancel
-int password_dialog(int dialog_resource)
+int password_dialog(short dialog_resource)
 {
 	int ret = 1;
 
@@ -939,8 +939,8 @@ int key_dialog(void)
 		StandardFileReply pubkey;
 		StandardGetFile(NULL, 0, NULL, &pubkey);
 		FSpPathFromLocation(&pubkey.sfFile, &path_length, &full_path);
-		prefs.pubkey_path = malloc(path_length+1);
-		strncpy(prefs.pubkey_path, (char*)(*full_path), path_length+1);
+		prefs.pubkey_path = malloc((size_t)(path_length+1));
+		strncpy(prefs.pubkey_path, (char*)(*full_path), (size_t)(path_length+1));
 		DisposeHandle(full_path);
 
 		// if the user hit cancel, 0
@@ -957,8 +957,8 @@ int key_dialog(void)
 		StandardFileReply privkey;
 		StandardGetFile(NULL, 0, NULL, &privkey);
 		FSpPathFromLocation(&privkey.sfFile, &path_length, &full_path);
-		prefs.privkey_path = malloc(path_length+1);
-		strncpy(prefs.privkey_path, (char*)(*full_path), path_length+1);
+		prefs.privkey_path = malloc((size_t)(path_length+1));
+		strncpy(prefs.privkey_path, (char*)(*full_path), (size_t)(path_length+1));
 		DisposeHandle(full_path);
 
 		// if the user hit cancel, 0
@@ -1052,7 +1052,7 @@ int intro_dialog(void)
 	prefs.hostname[prefs.hostname[0]+1] = ':';
 
 	char* port_start = prefs.hostname+prefs.hostname[0] + 2;
-	prefs.port[0] = strlen(port_start);
+	prefs.port[0] = (char)strlen(port_start);
 	strncpy(prefs.port+1, port_start, 255);
 
 	int use_password = GetControlValue(password_radio);
