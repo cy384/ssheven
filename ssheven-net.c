@@ -493,9 +493,9 @@ int init_connection(char* hostname)
 	YieldToAnyThread();
 
 	// register callbacks
-	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_SEND, network_send_callback);
-	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_RECV, network_recv_callback);
-	libssh2_session_callback_set(ssh_con.session, LIBSSH2_CALLBACK_DISCONNECT, network_recv_callback);
+	libssh2_session_callback_set2(ssh_con.session, LIBSSH2_CALLBACK_SEND, (libssh2_cb_generic*)network_send_callback);
+	libssh2_session_callback_set2(ssh_con.session, LIBSSH2_CALLBACK_RECV, (libssh2_cb_generic*)network_recv_callback);
+	libssh2_session_callback_set2(ssh_con.session, LIBSSH2_CALLBACK_DISCONNECT, (libssh2_cb_generic*)network_recv_callback);
 
 	long s = TickCount();
 	printf_i("Beginning SSH session handshake... "); YieldToAnyThread();
