@@ -451,7 +451,7 @@ void draw_screen_color(Rect* r)
 			{
 				if (glyph <= 0xFFFF)
 				{
-					glyph = (uint32_t)UNICODE_BMP_NORMALIZER[glyph];
+					glyph = (uint32_t)map_unicode(glyph);
 				}
 				else
 				{
@@ -625,7 +625,7 @@ void draw_screen_fast(Rect* r)
 			{
 				if (glyph <= 0xFFFF)
 				{
-					glyph = (uint32_t)UNICODE_BMP_NORMALIZER[glyph];
+					glyph = (uint32_t)map_unicode(glyph);
 				}
 				else
 				{
@@ -928,6 +928,8 @@ void console_setup(void)
 	short save_font_face = qd.thePort->txFace;
 	long save_font_fg   = qd.thePort->fgColor;
 	long save_font_bg   = qd.thePort->bkColor;
+
+	initialize_unicode_map();
 
 	BackColor(prefs.bg_color);
 	ForeColor(prefs.fg_color);
