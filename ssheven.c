@@ -249,6 +249,9 @@ void load_prefs(void)
 	e = FSRead(prefRefNum, &buffer_size, (void*)buffer);
 	e = FSClose(prefRefNum);
 
+	// last byte of a string must be nul before sscanf and friends
+	buffer[buffer_size] = 0;
+
 	// check the version (first two numbers)
 	int items_got = sscanf(buffer, "%d\n%d", &prefs.major_version, &prefs.minor_version);
 	if (items_got != 2) return;
