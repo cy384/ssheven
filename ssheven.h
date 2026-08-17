@@ -75,7 +75,7 @@ struct preferences
 
 	// pascal strings
 	char hostname[514]; // of the form: "hostname:portnumber", size is first only
-						// len + hostname:port[512] + null
+						// len(hostname component) + hostname:port[512] + null
 	char username[257]; // len + data[255] + null
 	char password[257]; // len + data[255] + null
 	char port[257]; // len + data[255] + null
