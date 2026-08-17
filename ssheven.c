@@ -130,8 +130,11 @@ int save_prefs(void)
 		char* output_buffer = malloc(write_length);
 		memset(output_buffer, 0, write_length);
 
-		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", prefs.major_version, prefs.minor_version);
-		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.font_size);
+		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", SSHEVEN_VERSION_MAJOR, SSHEVEN_VERSION_MINOR);
+		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n",
+				(int)prefs.auth_type,
+				(int)prefs.display_mode,
+				(int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.font_size);
 
 		snprintf(output_buffer+i, prefs.hostname[0]+1, "%s", prefs.hostname+1); i += prefs.hostname[0];
 		i += snprintf(output_buffer+i, write_length-i, "\n");
@@ -249,18 +252,27 @@ void load_prefs(void)
 	e = FSRead(prefRefNum, &buffer_size, (void*)buffer);
 	e = FSClose(prefRefNum);
 
-	// last byte of a string must be nul before sscanf and friends
+	// last byte of a string must be null before sscanf and friends
 	buffer[buffer_size] = 0;
 
 	// check the version (first two numbers)
 	int items_got = sscanf(buffer, "%d\n%d", &prefs.major_version, &prefs.minor_version);
-	if (items_got != 2) return;
+	if (items_got != 2) {
+		if (buffer) free(buffer);
+		return;
+	}
 
 	// only load a prefs file if the saved version number matches ours
 	if ((prefs.major_version == SSHEVEN_VERSION_MAJOR) && (prefs.minor_version == SSHEVEN_VERSION_MINOR))
 	{
 		prefs.loaded_from_file = 1;
-		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, &prefs.font_size, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
+		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]",
+				&prefs.major_version, &prefs.minor_version,
+				(int*)&prefs.auth_type,
+				(int*)&prefs.display_mode,
+				(int*)&prefs.fg_color, (int*)&prefs.bg_color, (int *)&prefs.font_size,
+				prefs.hostname+1, prefs.username+1, prefs.port+1,
+				prefs.privkey_path, prefs.pubkey_path);
 
 		// add the size for the pascal strings
 		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
@@ -1068,6 +1080,9 @@ int intro_dialog(void)
 	prefs.username[prefs.username[0] + 1] = '\0';
 
 	int use_password = GetControlValue(password_radio);
+
+	// save updated host prefs
+	save_prefs();
 
 	// clean it up
 	DisposeDialog(dlg);

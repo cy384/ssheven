@@ -92,7 +92,7 @@ struct preferences
 	int fg_color;
 	int bg_color;
 
-	short font_size;
+	int font_size;
 };
 
 extern struct preferences prefs;
