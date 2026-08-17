@@ -183,10 +183,10 @@ void init_prefs(void)
 	prefs.major_version = SSHEVEN_VERSION_MAJOR;
 	prefs.minor_version = SSHEVEN_VERSION_MINOR;
 
-	memset(&(prefs.hostname), 0, 512);
-	memset(&(prefs.username), 0, 256);
-	memset(&(prefs.password), 0, 256);
-	memset(&(prefs.port), 0, 256);
+	memset(&(prefs.hostname), 0, 514);
+	memset(&(prefs.username), 0, 257);
+	memset(&(prefs.password), 0, 257);
+	memset(&(prefs.port), 0, 257);
 
 	// default port: 22
 	prefs.port[0] = 2;
@@ -824,6 +824,7 @@ int password_dialog(short dialog_resource)
 	// read out of the hidden text box
 	GetDialogItem(dlog, 5, &type, &itemH, &box);
 	GetDialogItemText(itemH, (unsigned char*)prefs.password);
+	prefs.password[prefs.password[0] + 1] = '\0'; // set C null at end of pstring
 	prefs.auth_type = USE_PASSWORD;
 
 	DisposeDialog(dlog);
@@ -1053,8 +1054,8 @@ int intro_dialog(void)
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
+	memset(&(prefs.hostname), 0, 514); // zero it all to make sure we have a C null terminator
 	GetDialogItemText((Handle)address_text_box, prefs.hostname);
-	GetDialogItemText((Handle)username_text_box, prefs.username);
 
 	GetDialogItemText((Handle)port_text_box, prefs.hostname+prefs.hostname[0]+1);
 	prefs.hostname[prefs.hostname[0]+1] = ':';
@@ -1062,6 +1063,9 @@ int intro_dialog(void)
 	char* port_start = prefs.hostname + prefs.hostname[0] + 2;
 	strncpy(port_start, prefs.port+1, 254);
 	prefs.port[0] = (char)strlen(port_start);
+
+	GetDialogItemText((Handle)username_text_box, prefs.username);
+	prefs.username[prefs.username[0] + 1] = '\0';
 
 	int use_password = GetControlValue(password_radio);
 

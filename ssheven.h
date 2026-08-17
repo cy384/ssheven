@@ -74,10 +74,11 @@ struct preferences
 	int loaded_from_file;
 
 	// pascal strings
-	char hostname[512]; // of the form: "hostname:portnumber", size is first only
-	char username[256];
-	char password[256];
-	char port[256];
+	char hostname[514]; // of the form: "hostname:portnumber", size is first only
+						// len + hostname:port[512] + null
+	char username[257]; // len + data[255] + null
+	char password[257]; // len + data[255] + null
+	char port[257]; // len + data[255] + null
 
 	// malloc'd c strings
 	char* pubkey_path;
