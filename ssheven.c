@@ -130,8 +130,11 @@ int save_prefs(void)
 		char* output_buffer = malloc(write_length);
 		memset(output_buffer, 0, write_length);
 
-		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", prefs.major_version, prefs.minor_version);
-		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n", (int)prefs.auth_type, (int)prefs.display_mode, (int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.font_size);
+		long int i = snprintf(output_buffer, write_length, "%d\n%d\n", SSHEVEN_VERSION_MAJOR, SSHEVEN_VERSION_MINOR);
+		i += snprintf(output_buffer+i, write_length-i, "%d\n%d\n%d\n%d\n%d\n",
+				(int)prefs.auth_type,
+				(int)prefs.display_mode,
+				(int)prefs.fg_color, (int)prefs.bg_color, (int)prefs.font_size);
 
 		snprintf(output_buffer+i, prefs.hostname[0]+1, "%s", prefs.hostname+1); i += prefs.hostname[0];
 		i += snprintf(output_buffer+i, write_length-i, "\n");
@@ -183,10 +186,10 @@ void init_prefs(void)
 	prefs.major_version = SSHEVEN_VERSION_MAJOR;
 	prefs.minor_version = SSHEVEN_VERSION_MINOR;
 
-	memset(&(prefs.hostname), 0, 512);
-	memset(&(prefs.username), 0, 256);
-	memset(&(prefs.password), 0, 256);
-	memset(&(prefs.port), 0, 256);
+	memset(&(prefs.hostname), 0, 514);
+	memset(&(prefs.username), 0, 257);
+	memset(&(prefs.password), 0, 257);
+	memset(&(prefs.port), 0, 257);
 
 	// default port: 22
 	prefs.port[0] = 2;
@@ -249,15 +252,27 @@ void load_prefs(void)
 	e = FSRead(prefRefNum, &buffer_size, (void*)buffer);
 	e = FSClose(prefRefNum);
 
+	// last byte of a string must be null before sscanf and friends
+	buffer[buffer_size] = 0;
+
 	// check the version (first two numbers)
 	int items_got = sscanf(buffer, "%d\n%d", &prefs.major_version, &prefs.minor_version);
-	if (items_got != 2) return;
+	if (items_got != 2) {
+		if (buffer) free(buffer);
+		return;
+	}
 
 	// only load a prefs file if the saved version number matches ours
 	if ((prefs.major_version == SSHEVEN_VERSION_MAJOR) && (prefs.minor_version == SSHEVEN_VERSION_MINOR))
 	{
 		prefs.loaded_from_file = 1;
-		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]", &prefs.major_version, &prefs.minor_version, (int*)&prefs.auth_type, (int*)&prefs.display_mode, &prefs.fg_color, &prefs.bg_color, &prefs.font_size, prefs.hostname+1, prefs.username+1, prefs.port+1, prefs.privkey_path, prefs.pubkey_path);
+		items_got = sscanf(buffer, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%255[^\n]\n%255[^\n]\n%255[^\n]\n%[^\n]\n%[^\n]",
+				&prefs.major_version, &prefs.minor_version,
+				(int*)&prefs.auth_type,
+				(int*)&prefs.display_mode,
+				(int*)&prefs.fg_color, (int*)&prefs.bg_color, (int *)&prefs.font_size,
+				prefs.hostname+1, prefs.username+1, prefs.port+1,
+				prefs.privkey_path, prefs.pubkey_path);
 
 		// add the size for the pascal strings
 		prefs.hostname[0] = (unsigned char)strlen(prefs.hostname+1);
@@ -821,6 +836,7 @@ int password_dialog(short dialog_resource)
 	// read out of the hidden text box
 	GetDialogItem(dlog, 5, &type, &itemH, &box);
 	GetDialogItemText(itemH, (unsigned char*)prefs.password);
+	prefs.password[prefs.password[0] + 1] = '\0'; // set C null at end of pstring
 	prefs.auth_type = USE_PASSWORD;
 
 	DisposeDialog(dlog);
@@ -1050,8 +1066,8 @@ int intro_dialog(void)
 	} while(item != 1 && item != 8);
 
 	// copy the text out of the boxes
+	memset(&(prefs.hostname), 0, 514); // zero it all to make sure we have a C null terminator
 	GetDialogItemText((Handle)address_text_box, prefs.hostname);
-	GetDialogItemText((Handle)username_text_box, prefs.username);
 
 	GetDialogItemText((Handle)port_text_box, prefs.hostname+prefs.hostname[0]+1);
 	prefs.hostname[prefs.hostname[0]+1] = ':';
@@ -1060,7 +1076,13 @@ int intro_dialog(void)
 	strncpy(port_start, prefs.port+1, 254);
 	prefs.port[0] = (char)strlen(port_start);
 
+	GetDialogItemText((Handle)username_text_box, prefs.username);
+	prefs.username[prefs.username[0] + 1] = '\0';
+
 	int use_password = GetControlValue(password_radio);
+
+	// save updated host prefs
+	save_prefs();
 
 	// clean it up
 	DisposeDialog(dlg);

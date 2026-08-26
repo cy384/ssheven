@@ -71,23 +71,45 @@ void end_connection(void)
 		// request to close the TCP connection
 		OTSndOrderlyDisconnect(ssh_con.endpoint);
 
-		// discard remaining data so we can finish closing the connection
+		// Set nonblocking before spinning to flush and shut down
+		OTSetNonBlocking(ssh_con.endpoint);
+
+close_look:
+		// finish closing the TCP connection
 		int rc = 1;
 		OTFlags ot_flags;
-		while (rc != kOTLookErr)
-		{
-			rc = OTRcv(ssh_con.endpoint, ssh_con.recv_buffer, 1, &ot_flags);
+
+		for (unsigned int n = 0; n < 5; n++) {
+			// discard remaining data so we can finish closing the connection
+			while (rc != kOTLookErr && rc != kOTNoDataErr)
+			{
+				rc = OTRcv(ssh_con.endpoint, ssh_con.recv_buffer, 1, &ot_flags);
+			}
+
+		}
+		// some servers seem to completely kill the socket on login error, and
+		// never send a clean shutdown; if there is no pending data and no pending
+		// shutdown, bail
+		if (rc != kOTLookErr) {
+			OTSndDisconnect(ssh_con.endpoint, NULL);
 		}
 
-		// finish closing the TCP connection
 		OSStatus result = OTLook(ssh_con.endpoint);
 
 		switch (result)
 		{
-			case T_DISCONNECT:
-				OTRcvDisconnect(ssh_con.endpoint, nil);
+			case 0x0:
 				break;
-
+			case T_DISCONNECT:
+				printf_i("Disconnect event received\r\n");
+				OTRcvDisconnect(ssh_con.endpoint, nil);
+				goto ot_unbind;
+				break;
+			case T_DATA:
+			case T_EXDATA:
+				printf_i("Data pending on close\r\n");
+				goto close_look;
+				break;
 			case T_ORDREL:
 				err = OTRcvOrderlyDisconnect(ssh_con.endpoint);
 				if (err == noErr)
@@ -95,19 +117,29 @@ void end_connection(void)
 					err = OTSndOrderlyDisconnect(ssh_con.endpoint);
 				}
 				break;
-
+			case T_RESET:
+				printf_i("Connection reset by remote end\r\n");
+				goto ot_unbind;
+				break;
+			case T_DISCONNECTCOMPLETE:
+				printf_i("Disconnect complete\r\n");
+				goto ot_unbind;
+				break;
 			default:
-				printf_i("Unexpected OTLook result while closing: %s\r\n", OT_event_string(result));
+				printf_i("Unexpected OTLook result while closing: %d %s\r\n", result, OT_event_string(result));
 				break;
 		}
 
+ot_unbind:
 		// release endpoint
 		err = OTUnbind(ssh_con.endpoint);
-		if (err != noErr) printf_i("OTUnbind failed.\r\n");
+		if (err != noErr) printf_i("OTUnbind failed. %d\r\n", err);
 
 		err = OTCloseProvider(ssh_con.endpoint);
 		if (err != noErr) printf_i("OTCloseProvider failed.\r\n");
 	}
+
+	printf_i("\r\nDisconnected\r\n");
 
 	read_thread_state = DONE;
 }
@@ -597,6 +629,7 @@ void* read_thread(void* arg)
 	if (!ok || (read_thread_state != OPEN))
 	{
 		end_connection();
+		disconnect();
 		return 0;
 	}
 
