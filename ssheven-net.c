@@ -91,7 +91,7 @@ close_look:
 		// never send a clean shutdown; if there is no pending data and no pending
 		// shutdown, bail
 		if (rc != kOTLookErr) {
-			OTSndDisconnect(ssh_con.endpoint, nullptr);
+			OTSndDisconnect(ssh_con.endpoint, NULL);
 		}
 
 		OSStatus result = OTLook(ssh_con.endpoint);
